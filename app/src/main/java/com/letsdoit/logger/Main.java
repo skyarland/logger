@@ -6,9 +6,12 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewParent;
 import android.widget.ArrayAdapter;
+import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -88,14 +91,23 @@ public class Main extends Activity {
     public void onTimeEntryButtonClick(View view) {
         int id = view.getId();
 
+        ViewParent halfHourView = view.getParent();
+        ViewParent hourView = halfHourView.getParent();
+        LinearLayout listRow = (LinearLayout) hourView.getParent();
+        TextView hour = (TextView) listRow.getChildAt(0);
+
+        int selectedHour = Integer.parseInt(String.valueOf(hour.getText()));
+
         if (isStarted) {
             int endMinute = END_MINUTE.get(id);
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setMessage(String.format("Selection from (%sm) to (%sm)", startMinute, endMinute));
+            builder.setMessage(String.format("Selection from (%sh %sm) to (%sh %sm)",
+                    startHour, startMinute, selectedHour, endMinute));
             builder.create().show();
             isStarted = false;
         } else {
             startMinute = START_MINUTE.get(id);
+            startHour = selectedHour;
             isStarted = true;
         }
     }
