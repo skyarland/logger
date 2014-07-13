@@ -1,5 +1,7 @@
 package com.letsdoit.logger.data.activity;
 
+import android.util.Pair;
+
 import com.google.common.base.Preconditions;
 
 import org.apache.commons.lang3.StringUtils;
@@ -49,14 +51,18 @@ public class ActivityFragment {
     public ActivityFragment(String activityName, DateTime activityStart, DateTime activityEnd, DateTime fragmentStart,
                             DateTime fragmentEnd) {
         Preconditions.checkArgument(StringUtils.isEmpty(activityName), "Activity name cannot be empty.");
-        Preconditions.checkArgument(activityEnd.isAfter(activityStart),
-                "Activity start date cannot be after activity end date.");
-        Preconditions.checkArgument(fragmentEnd.isAfter(fragmentStart),
-                "Fragment start date cannot be after fragment end date.");
+
+        Preconditions.checkArgument(activityStart.isBefore(activityEnd),
+                "Activity start date must be before the end date.");
+
+        Preconditions.checkArgument(fragmentStart.isBefore(fragmentEnd),
+                "Fragment start date must be before fragment end date.");
+
         Preconditions.checkArgument(false == activityStart.isAfter(fragmentStart),
                 "Fragment start date cannot be earlier than activity start date.");
-        Preconditions.checkArgument(false == activityEnd.isAfter(fragmentEnd),
-                "Fragment start date cannot be later than activity end date.");
+        Preconditions.checkArgument(false == activityEnd.isBefore(fragmentEnd),
+                "Fragment end date cannot be later than activity end date.");
+
         Preconditions.checkArgument(false == new Duration(fragmentStart,
                 fragmentEnd).isLongerThan(MAX_FRAGMENT_DURATION), "Fragment cannot be longer than " +
                 MAX_FRAGMENT_DURATION);
@@ -66,6 +72,60 @@ public class ActivityFragment {
         this.fragmentStart = fragmentStart;
         this.fragmentEnd = fragmentEnd;
         this.activityName = activityName;
+    }
+
+    public ActivityFragment(String activityName, DateTime activityStart, DateTime activityEnd) {
+        this(activityName, activityStart, activityEnd, activityStart, activityEnd);
+    }
+
+    public Pair<ActivityFragment, ActivityFragment> splitAtTime(DateTime splitTime) {
+        Preconditions.checkArgument(splitTime.isAfter(fragmentStart), "The split time has to be after the fragment " +
+                "start time");
+        Preconditions.checkArgument(splitTime.isBefore(fragmentEnd), "The split time has to be before the fragment " +
+                "end time");
+
+        ActivityFragment first = new ActivityFragment(activityName, activityStart, activityEnd, fragmentStart,
+                splitTime);
+        ActivityFragment second = new ActivityFragment(activityName, activityStart, activityEnd, splitTime,
+                fragmentEnd);
+
+        return new Pair<ActivityFragment, ActivityFragment>(first, second);
+    }
+
+//    public static ActivityFragment merge(ActivityFragment first, ActivityFragment second) {
+//        Preconditions.checkArgument(first.activityName.equals(second.activityName),
+//                "Merged activities need to have the same activity name.");
+//
+//        Preconditions.checkArgument(first.activityStart.equals(second.activityStart),
+//                "Merged activities need to have the same activity start time.");
+//        Preconditions.checkArgument(first.activityEnd.equals(second.activityEnd),
+//                "Merged activities need to have the same activity end time.");
+//
+//        Preconditions.checkArgument(first.fragmentEnd.equals(second.fragmentStart),
+//                "The first activity needs to end at the same time as the second activity starts when merging.");
+//
+//        return new ActivityFragment(first.getActivityName(), first.getActivityStart(), first.getActivityEnd(),
+//                first.getFragmentStart(), second.getFragmentEnd());
+//    }
+
+    public String getActivityName() {
+        return activityName;
+    }
+
+    public DateTime getActivityStart() {
+        return activityStart;
+    }
+
+    public DateTime getActivityEnd() {
+        return activityEnd;
+    }
+
+    public DateTime getFragmentStart() {
+        return fragmentStart;
+    }
+
+    public DateTime getFragmentEnd() {
+        return fragmentEnd;
     }
 
 }

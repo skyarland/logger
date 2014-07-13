@@ -2,6 +2,8 @@ package com.letsdoit.logger;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.LoaderManager;
+import android.content.Loader;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -13,59 +15,36 @@ import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.google.common.collect.Lists;
+import com.letsdoit.logger.data.activity.ActivityFragment;
+import com.letsdoit.logger.data.activity.CompletedActivityFragmentsDAO;
+import com.letsdoit.logger.loader.CompletedActivityFragmentLoader;
+import com.letsdoit.logger.view.HourAdapter;
+
+import org.joda.time.DateTime;
+import org.joda.time.Period;
+
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
-public class Main extends Activity {
+public class Main extends Activity implements LoaderManager.LoaderCallbacks<List<ActivityFragment>> {
 
-    private boolean isStarted = false;
-    private int startHour;
-    private int startMinute;
-
-    private static Map<Integer, Integer> START_MINUTE;
-    private static Map<Integer, Integer> END_MINUTE;
-
-    static {
-        START_MINUTE = new HashMap<Integer, Integer>();
-        START_MINUTE.put(R.id.m00_05, 0);
-        START_MINUTE.put(R.id.m05_10, 5);
-        START_MINUTE.put(R.id.m10_15, 10);
-        START_MINUTE.put(R.id.m15_20, 15);
-        START_MINUTE.put(R.id.m20_25, 20);
-        START_MINUTE.put(R.id.m25_30, 25);
-        START_MINUTE.put(R.id.m30_35, 30);
-        START_MINUTE.put(R.id.m35_40, 35);
-        START_MINUTE.put(R.id.m40_45, 40);
-        START_MINUTE.put(R.id.m45_50, 45);
-        START_MINUTE.put(R.id.m50_55, 50);
-        START_MINUTE.put(R.id.m55_60, 55);
-
-        END_MINUTE = new HashMap<Integer, Integer>();
-        END_MINUTE.put(R.id.m00_05, 5);
-        END_MINUTE.put(R.id.m05_10, 10);
-        END_MINUTE.put(R.id.m10_15, 15);
-        END_MINUTE.put(R.id.m15_20, 20);
-        END_MINUTE.put(R.id.m20_25, 25);
-        END_MINUTE.put(R.id.m25_30, 30);
-        END_MINUTE.put(R.id.m30_35, 35);
-        END_MINUTE.put(R.id.m35_40, 40);
-        END_MINUTE.put(R.id.m40_45, 45);
-        END_MINUTE.put(R.id.m45_50, 50);
-        END_MINUTE.put(R.id.m50_55, 55);
-        END_MINUTE.put(R.id.m55_60, 60);
-    }
+    private CompletedActivityFragmentsDAO dao;
+    private HourAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        
+        this.dao = new CompletedActivityFragmentsDAO();
+        this.adapter = new HourAdapter(this);
 
         ListView listView = (ListView) findViewById(R.id.listView);
-        String[] hours = {"4", "5", "6", "7", "8", "9", "10", "11", "12", "1", "2", "3", "4", "5",
-                "6", "7", "8", "9", "10", "11", "12", "1", "2", "3"};
-        ListAdapter adapter = new ArrayAdapter<String>(this, R.layout.hour, R.id.hour, hours);
-        listView.setAdapter(adapter);
+        listView.setAdapter(this.adapter);
     }
 
 
@@ -89,26 +68,25 @@ public class Main extends Activity {
     }
 
     public void onTimeEntryButtonClick(View view) {
-        int id = view.getId();
+    }
 
-        ViewParent halfHourView = view.getParent();
-        ViewParent hourView = halfHourView.getParent();
-        LinearLayout listRow = (LinearLayout) hourView.getParent();
-        TextView hour = (TextView) listRow.getChildAt(0);
+    @Override
+    public Loader<List<ActivityFragment>> onCreateLoader(int id, Bundle args) {
+        return new CompletedActivityFragmentLoader(this, dao);
+    }
 
-        int selectedHour = Integer.parseInt(String.valueOf(hour.getText()));
+    @Override
+    public void onLoadFinished(Loader<List<ActivityFragment>> loader, List<ActivityFragment> data) {
+        DateTime now = new DateTime();
+        DateTime earliestTime = now.minus(Period.hours(8));
+        DateTime latesetTime = now.plus(Period.hours(8));
+        this.adapter.setData(data, earliestTime, latesetTime);
+    }
 
-        if (isStarted) {
-            int endMinute = END_MINUTE.get(id);
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setMessage(String.format("Selection from (%sh %sm) to (%sh %sm)",
-                    startHour, startMinute, selectedHour, endMinute));
-            builder.create().show();
-            isStarted = false;
-        } else {
-            startMinute = START_MINUTE.get(id);
-            startHour = selectedHour;
-            isStarted = true;
-        }
+    @Override
+    public void onLoaderReset(Loader<List<ActivityFragment>> loader) {
+        DateTime now = new DateTime();
+        List<ActivityFragment> empty = Collections.emptyList();
+        adapter.setData(empty, now, now);
     }
 }
