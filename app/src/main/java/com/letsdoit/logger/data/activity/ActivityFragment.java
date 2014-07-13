@@ -50,7 +50,7 @@ public class ActivityFragment {
 
     public ActivityFragment(String activityName, DateTime activityStart, DateTime activityEnd, DateTime fragmentStart,
                             DateTime fragmentEnd) {
-        Preconditions.checkArgument(StringUtils.isEmpty(activityName), "Activity name cannot be empty.");
+        Preconditions.checkArgument(false == StringUtils.isEmpty(activityName), "Activity name cannot be empty.");
 
         Preconditions.checkArgument(activityStart.isBefore(activityEnd),
                 "Activity start date must be before the end date.");

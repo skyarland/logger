@@ -2,6 +2,7 @@ package com.letsdoit.logger.view;
 
 import android.app.Activity;
 import android.content.Context;
+import android.util.Log;
 import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,8 +23,7 @@ import java.util.List;
  * Created by Andrey on 7/12/2014.
  */
 public class HourAdapter extends ArrayAdapter<List<ActivityFragment>> {
-    private DateTime earliestTime;
-    private DateTime latestTime;
+    private static final String TAG = "ADP_HourAdapter";
 
     private LayoutInflater inflater;
 
@@ -34,8 +34,10 @@ public class HourAdapter extends ArrayAdapter<List<ActivityFragment>> {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
+        Log.d(TAG, "getView called");
+
         View view = inflater.inflate(R.layout.hour, parent, false);
-        
+
         // TODO: add time entry blocks if no activity for the time period
         // TODO: Merge fragments from the same activity in the same hour
 
@@ -43,22 +45,22 @@ public class HourAdapter extends ArrayAdapter<List<ActivityFragment>> {
     }
 
     public void setData(List<ActivityFragment> fragments, DateTime earliestTime, DateTime latestTime) {
-        this.earliestTime = roundDownToHour(earliestTime);
-        this.latestTime = roundDownToHour(latestTime);
+        Log.d(TAG, "setData called");
 
-        if (fragments.isEmpty()) {
-            return;
-        }
+        clear();
+        earliestTime = roundDownToHour(earliestTime);
+        latestTime = roundDownToHour(latestTime);
+        Log.d(TAG, "earliestTime=" + earliestTime);
+        Log.d(TAG, "latestTime=" + latestTime);
 
         Iterator<ActivityFragment> fragmentIterator = fragments.iterator();
         ActivityFragment fragment = fragmentIterator.next();
         DateTime endOfHour = earliestTime;
 
         while (endOfHour.isBefore(latestTime)) {
-            endOfHour = earliestTime.plus(Period.hours(1));
             List<ActivityFragment> hourFragments = Lists.newArrayList();
 
-            while (fragment.getFragmentStart().isBefore(endOfHour)) {
+            while (fragment != null && fragment.getFragmentStart().isBefore(endOfHour)) {
                 if (fragment.getFragmentEnd().isAfter(endOfHour)) {
                     // Split fragments that cross the hour
                     Pair<ActivityFragment, ActivityFragment> split = fragment.splitAtTime(endOfHour);
@@ -69,16 +71,23 @@ public class HourAdapter extends ArrayAdapter<List<ActivityFragment>> {
                     hourFragments.add(fragment);
                     if (fragmentIterator.hasNext()) {
                         fragment = fragmentIterator.next();
+                    } else {
+                        fragment = null;
                     }
                 }
             }
 
+            Log.d(TAG, "Added hour " + endOfHour);
             add(hourFragments);
+            endOfHour = endOfHour.plus(Period.hours(1));
         }
     }
 
     private DateTime roundDownToHour(DateTime time) {
-        return time.withMinuteOfHour(0).withSecondOfMinute(0).withMillis(0);
+        int minutes = time.getMinuteOfHour();
+        int millis = time.getMillisOfSecond();
+        int seconds = time.getSecondOfMinute();
+        return time.minusMinutes(minutes).minusSeconds(seconds).minusMillis(millis);
     }
 
 }

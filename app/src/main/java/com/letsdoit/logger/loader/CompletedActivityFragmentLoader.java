@@ -45,7 +45,7 @@ public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activi
      */
     @Override
     public List<ActivityFragment> loadInBackground() {
-        if (DEBUG) Log.i(TAG, "+++ loadInBackground() called! +++");
+        Log.i(TAG, "+++ loadInBackground() called! +++");
 
         // Retrieve activity fragments around the current time
         DateTime now = new DateTime();

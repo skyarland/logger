@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.app.LoaderManager;
 import android.content.Loader;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -22,6 +23,7 @@ import com.letsdoit.logger.loader.CompletedActivityFragmentLoader;
 import com.letsdoit.logger.view.HourAdapter;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
 
 import java.util.Collections;
@@ -32,11 +34,16 @@ import java.util.Map;
 
 public class Main extends Activity implements LoaderManager.LoaderCallbacks<List<ActivityFragment>> {
 
+    private static final String TAG = "ADP_Main";
+    private static final int LOADER_ID = 1;
+
     private CompletedActivityFragmentsDAO dao;
     private HourAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        DateTimeZone.setDefault(DateTimeZone.UTC);
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
@@ -45,6 +52,10 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
 
         ListView listView = (ListView) findViewById(R.id.listView);
         listView.setAdapter(this.adapter);
+        
+        getLoaderManager().initLoader(LOADER_ID, null, this);
+        
+        Log.d(TAG, "onCreate completed");
     }
 
 
@@ -72,6 +83,7 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
 
     @Override
     public Loader<List<ActivityFragment>> onCreateLoader(int id, Bundle args) {
+        Log.d(TAG, "creating loader");
         return new CompletedActivityFragmentLoader(this, dao);
     }
 
@@ -79,8 +91,9 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
     public void onLoadFinished(Loader<List<ActivityFragment>> loader, List<ActivityFragment> data) {
         DateTime now = new DateTime();
         DateTime earliestTime = now.minus(Period.hours(8));
-        DateTime latesetTime = now.plus(Period.hours(8));
-        this.adapter.setData(data, earliestTime, latesetTime);
+        DateTime latestTime = now.plus(Period.hours(8));
+        this.adapter.setData(data, earliestTime, latestTime);
+        Log.d(TAG, "onLoadFinished completed");
     }
 
     @Override
@@ -88,5 +101,7 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
         DateTime now = new DateTime();
         List<ActivityFragment> empty = Collections.emptyList();
         adapter.setData(empty, now, now);
+        adapter.notifyDataSetChanged();
+        Log.d(TAG, "onLoaderReset completed");
     }
 }
