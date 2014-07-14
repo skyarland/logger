@@ -18,12 +18,16 @@
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:id="@+id/hourLayout">
 
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:id="@+id/firstHalfHourLayout"
+            android:clickable="false"
+            android:baselineAligned="false">
 
             <Button
                 style="?android:attr/buttonStyleSmall"
@@ -83,7 +87,8 @@
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:id="@+id/secondHalfHourLayout">
 
             <Button
                 style="?android:attr/buttonStyleSmall"

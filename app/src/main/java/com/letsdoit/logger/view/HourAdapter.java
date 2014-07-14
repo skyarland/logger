@@ -1,13 +1,19 @@
 package com.letsdoit.logger.view;
 
-import android.app.Activity;
 import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.Point;
 import android.util.Log;
 import android.util.Pair;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.google.common.collect.Lists;
 import com.letsdoit.logger.R;
@@ -36,12 +42,44 @@ public class HourAdapter extends ArrayAdapter<List<ActivityFragment>> {
     public View getView(int position, View convertView, ViewGroup parent) {
         Log.d(TAG, "getView called");
 
-        View view = inflater.inflate(R.layout.hour, parent, false);
+        View view;
+        if (convertView == null) {
+            view = inflater.inflate(R.layout.hour, parent, false);
+        } else {
+            view = convertView;
+        }
+
+        TextView hourText = (TextView) view.findViewById(R.id.hour);
+        hourText.setText("" + position);
+
+        WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
+        Point outSize = new Point();
+        windowManager.getDefaultDisplay().getSize(outSize);
+
+        int hourTextViewSize = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 24,
+                getContext().getResources().getDisplayMetrics());
+
+        int pixelsInHalfHour = outSize.x - hourTextViewSize;
+        Log.d(TAG, "pixelsInHalfHour=" + pixelsInHalfHour);
+
+        LinearLayout firstHalfHourLayout = (LinearLayout) view.findViewById(R.id.firstHalfHourLayout);
+        LinearLayout secondHalfHourLayout = (LinearLayout) view.findViewById(R.id.secondHalfHourLayout);
+        sizeChildrenInHalfHour(firstHalfHourLayout, pixelsInHalfHour);
+        sizeChildrenInHalfHour(secondHalfHourLayout, pixelsInHalfHour);
+
 
         // TODO: add time entry blocks if no activity for the time period
         // TODO: Merge fragments from the same activity in the same hour
 
         return view;
+    }
+
+    private void sizeChildrenInHalfHour(LinearLayout halfHourLayout, int pixelsInHalfHour) {
+
+        for(int i = 0; i < halfHourLayout.getChildCount(); i++) {
+            Button button = (Button) halfHourLayout.getChildAt(i);
+            button.getLayoutParams().width = pixelsInHalfHour / 6;
+        }
     }
 
     public void setData(List<ActivityFragment> fragments, DateTime earliestTime, DateTime latestTime) {
