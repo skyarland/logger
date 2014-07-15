@@ -1,8 +1,8 @@
 package com.letsdoit.logger.view;
 
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.Point;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Pair;
 import android.util.TypedValue;
@@ -18,6 +18,7 @@ import android.widget.TextView;
 import com.google.common.collect.Lists;
 import com.letsdoit.logger.R;
 import com.letsdoit.logger.data.activity.ActivityFragment;
+import com.letsdoit.logger.data.activity.ActivityInterval;
 
 import org.joda.time.DateTime;
 import org.joda.time.Period;
@@ -28,14 +29,31 @@ import java.util.List;
 /**
  * Created by Andrey on 7/12/2014.
  */
-public class HourAdapter extends ArrayAdapter<List<ActivityFragment>> {
+public class HourAdapter extends ArrayAdapter<Pair<ActivityInterval, ActivityInterval>> {
     private static final String TAG = "ADP_HourAdapter";
+
+    private static int HOUR_FIELD_WIDTH_IN_DIP = 24;
+    private static int NUM_BLOCKS_IN_HALF_HOUR = 6;
+
+    private int hourFieldWidthInPixels;
+    private int pixelsInHalfHour;
 
     private LayoutInflater inflater;
 
     public HourAdapter(Context context) {
         super(context, R.layout.hour);
         inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+        hourFieldWidthInPixels = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, HOUR_FIELD_WIDTH_IN_DIP,
+                displayMetrics);
+
+        Point outSize = new Point();
+        WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        windowManager.getDefaultDisplay().getSize(outSize);
+        pixelsInHalfHour = outSize.x - hourFieldWidthInPixels;
+
+        Log.d(TAG, "pixelsInHalfHour=" + pixelsInHalfHour);
     }
 
     @Override
@@ -52,33 +70,71 @@ public class HourAdapter extends ArrayAdapter<List<ActivityFragment>> {
         TextView hourText = (TextView) view.findViewById(R.id.hour);
         hourText.setText("" + position);
 
-        WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
-        Point outSize = new Point();
-        windowManager.getDefaultDisplay().getSize(outSize);
-
-        int hourTextViewSize = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 24,
-                getContext().getResources().getDisplayMetrics());
-
-        int pixelsInHalfHour = outSize.x - hourTextViewSize;
-        Log.d(TAG, "pixelsInHalfHour=" + pixelsInHalfHour);
-
         LinearLayout firstHalfHourLayout = (LinearLayout) view.findViewById(R.id.firstHalfHourLayout);
         LinearLayout secondHalfHourLayout = (LinearLayout) view.findViewById(R.id.secondHalfHourLayout);
-        sizeChildrenInHalfHour(firstHalfHourLayout, pixelsInHalfHour);
-        sizeChildrenInHalfHour(secondHalfHourLayout, pixelsInHalfHour);
+        sizeChildrenInHalfHour(firstHalfHourLayout);
+        sizeChildrenInHalfHour(secondHalfHourLayout);
 
+        Pair<ActivityInterval, ActivityInterval> hourData = getItem(position);
+        ActivityInterval firstHalfHour = hourData.first;
+        ActivityInterval secondHalfHour = hourData.second;
 
         // TODO: add time entry blocks if no activity for the time period
-        // TODO: Merge fragments from the same activity in the same hour
 
         return view;
     }
 
-    private void sizeChildrenInHalfHour(LinearLayout halfHourLayout, int pixelsInHalfHour) {
+    private Pair<List<ActivityFragment>, List<ActivityFragment>> partitionAtTime(DateTime partition,
+                                                                                 List<ActivityFragment> fragments) {
+        List<ActivityFragment> first = Lists.newArrayList();
+        List<ActivityFragment> second = Lists.newArrayList();
+
+        for (ActivityFragment fragment : fragments) {
+            if (fragment.getFragmentStart().isBefore(partition)) {
+                if (fragment.getFragmentEnd().isAfter(partition)) {
+                    Pair<ActivityFragment, ActivityFragment> beforeAndAfter = fragment.splitAtTime(partition);
+                    first.add(beforeAndAfter.first);
+                    second.add(beforeAndAfter.second);
+                } else {
+                    first.add(fragment);
+                }
+            } else {
+                second.add(fragment);
+            }
+        }
+
+        return new Pair(first, second);
+    }
+
+    private List<ActivityFragment> mergeFragments(List<ActivityFragment> fragments) {
+        if (fragments.size() < 2) {
+            return fragments;
+        }
+
+        List<ActivityFragment> mergedFragments = Lists.newArrayList();
+        Iterator<ActivityFragment> iterator = fragments.iterator();
+        ActivityFragment prevFragment = iterator.next();
+
+        while (iterator.hasNext()) {
+            ActivityFragment fragment = iterator.next();
+            if (prevFragment.isSameActivityAs(fragment)) {
+                prevFragment = ActivityFragment.mergeAndInterpolate(prevFragment, fragment);
+            } else {
+                mergedFragments.add(prevFragment);
+                prevFragment = fragment;
+            }
+        }
+
+        mergedFragments.add(prevFragment);
+
+        return mergedFragments;
+    }
+
+    private void sizeChildrenInHalfHour(LinearLayout halfHourLayout) {
 
         for(int i = 0; i < halfHourLayout.getChildCount(); i++) {
             Button button = (Button) halfHourLayout.getChildAt(i);
-            button.getLayoutParams().width = pixelsInHalfHour / 6;
+            button.getLayoutParams().width = pixelsInHalfHour / NUM_BLOCKS_IN_HALF_HOUR;
         }
     }
 
@@ -91,34 +147,18 @@ public class HourAdapter extends ArrayAdapter<List<ActivityFragment>> {
         Log.d(TAG, "earliestTime=" + earliestTime);
         Log.d(TAG, "latestTime=" + latestTime);
 
-        Iterator<ActivityFragment> fragmentIterator = fragments.iterator();
-        ActivityFragment fragment = fragmentIterator.next();
-        DateTime endOfHour = earliestTime;
+        List<ActivityInterval> halfHours = ActivityFragment.partition(earliestTime, latestTime, Period.minutes(30), fragments);
 
-        while (endOfHour.isBefore(latestTime)) {
-            List<ActivityFragment> hourFragments = Lists.newArrayList();
-
-            while (fragment != null && fragment.getFragmentStart().isBefore(endOfHour)) {
-                if (fragment.getFragmentEnd().isAfter(endOfHour)) {
-                    // Split fragments that cross the hour
-                    Pair<ActivityFragment, ActivityFragment> split = fragment.splitAtTime(endOfHour);
-                    hourFragments.add(split.first);
-                    // This will will break from this while loop, since the fragment start will be endOfHour
-                    fragment = split.second;
-                } else {
-                    hourFragments.add(fragment);
-                    if (fragmentIterator.hasNext()) {
-                        fragment = fragmentIterator.next();
-                    } else {
-                        fragment = null;
-                    }
-                }
+        ActivityInterval prev = null;
+        for (ActivityInterval halfHour : halfHours) {
+            if (prev == null) {
+                prev = halfHour;
+            } else {
+                add(new Pair(prev, halfHour));
+                prev = null;
             }
-
-            Log.d(TAG, "Added hour " + endOfHour);
-            add(hourFragments);
-            endOfHour = endOfHour.plus(Period.hours(1));
         }
+
     }
 
     private DateTime roundDownToHour(DateTime time) {
