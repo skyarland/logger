@@ -93,47 +93,31 @@ public class HourAdapter extends ArrayAdapter<Pair<ActivityInterval, ActivityInt
         return view;
     }
 
-
-
-    private Pair<List<ActivityFragment>, List<ActivityFragment>> partitionAtTime(DateTime partition,
-                                                                                 List<ActivityFragment> fragments) {
-        List<ActivityFragment> first = Lists.newArrayList();
-        List<ActivityFragment> second = Lists.newArrayList();
-
-        for (ActivityFragment fragment : fragments) {
-            if (fragment.getStart().isBefore(partition)) {
-                if (fragment.getEnd().isAfter(partition)) {
-                    Pair<ActivityFragment, ActivityFragment> beforeAndAfter = fragment.splitAtTime(partition);
-                    first.add(beforeAndAfter.first);
-                    second.add(beforeAndAfter.second);
-                } else {
-                    first.add(fragment);
-                }
-            } else {
-                second.add(fragment);
-            }
-        }
-
-        return new Pair(first, second);
-    }
-
     private void sizeChildrenInHalfHour(List<DisplayBlock> halfHour, LinearLayout halfHourLayout) {
         // Make sure there are enough GUI blocks to display all of the DisplayBlocks
-        while (halfHourLayout.getChildCount() < halfHour.size()) {
+        int numAdditionalButtonsNeeded = halfHour.size() - halfHourLayout.getChildCount();
+        for (int i = 0; i < numAdditionalButtonsNeeded; i++) {
+            Log.d(TAG, "Inflating additional buttons needed for display");
             inflater.inflate(R.layout.disply_block, halfHourLayout, false);
         }
 
         // Resize and update the text on the GUI blocks
-        for(int i = 0; i < halfHour.size(); i++) {
+        for(int i = 0; i < halfHour.size() && i < halfHourLayout.getChildCount(); i++) {
             DisplayBlock block = halfHour.get(i);
             double relativeSize = block.getPercentageTimeOfPeriod(HALF_HOUR_MILLIS);
+            Log.d(TAG, "Relative button size=" + relativeSize);
 
             Button button = (Button) halfHourLayout.getChildAt(i);
             int buttonWidth = (int) (relativeSize * pixelsInHalfHour);
             button.getLayoutParams().width = buttonWidth;
+            if (block.hasActivityFragment()) {
+                Log.d(TAG, "Updating button text with activity name " + block.getActivityFragment().getActivityName());
+                button.setText(block.getActivityFragment().getActivityName());
+            }
         }
 
         for (int i = halfHour.size(); i < halfHourLayout.getChildCount(); i++) {
+            Log.d(TAG, "Setting button size to 0 for extra buttons");
             Button button = (Button) halfHourLayout.getChildAt(i);
             button.getLayoutParams().width = 0;
         }
