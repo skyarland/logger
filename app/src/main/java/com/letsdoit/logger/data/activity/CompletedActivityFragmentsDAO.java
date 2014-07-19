@@ -23,7 +23,7 @@ public class CompletedActivityFragmentsDAO {
     public List<ActivityFragment> getAround(DateTime dateTime) {
         Log.d(TAG, "getAround called");
         ArrayList<ActivityFragment> fragments = getActivityFragments(dateTime);
-        return ActivityFragment.combineFragmentsForSameActivities(fragments);
+        return ActivityFragment.defragment(fragments);
     }
 
     private ArrayList<ActivityFragment> getActivityFragments(DateTime dateTime) {

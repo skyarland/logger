@@ -1,6 +1,5 @@
 package com.letsdoit.logger.data.activity;
 
-import android.accounts.AccountAuthenticatorActivity;
 import android.util.Log;
 import android.util.Pair;
 
@@ -36,6 +35,8 @@ import java.util.List;
  * Created by Andrey on 7/12/2014.
  */
 public class ActivityFragment {
+    private static final String TAG = "ADP_ActivityFragment";
+
     /**
      * An activity that was happening at a specific instant will have a fragment that started no longer than this
      * duration relative to the instant and ended no later than this duration relative to this instant.  This makes
@@ -50,32 +51,32 @@ public class ActivityFragment {
     private final DateTime activityStart;
     private final DateTime activityEnd;
 
-    private final DateTime fragmentStart;
-    private final DateTime fragmentEnd;
+    private final DateTime start;
+    private final DateTime end;
 
-    public ActivityFragment(String activityName, DateTime activityStart, DateTime activityEnd, DateTime fragmentStart,
-                            DateTime fragmentEnd) {
+    public ActivityFragment(String activityName, DateTime activityStart, DateTime activityEnd, DateTime start,
+                            DateTime end) {
         Preconditions.checkArgument(false == StringUtils.isEmpty(activityName), "Activity name cannot be empty.");
 
         Preconditions.checkArgument(activityStart.isBefore(activityEnd),
                 "Activity start date must be before the end date.");
 
-        Preconditions.checkArgument(fragmentStart.isBefore(fragmentEnd),
+        Preconditions.checkArgument(start.isBefore(end),
                 "Fragment start date must be before fragment end date.");
 
-        Preconditions.checkArgument(false == activityStart.isAfter(fragmentStart),
+        Preconditions.checkArgument(false == activityStart.isAfter(start),
                 "Fragment start date cannot be earlier than activity start date.");
-        Preconditions.checkArgument(false == activityEnd.isBefore(fragmentEnd),
+        Preconditions.checkArgument(false == activityEnd.isBefore(end),
                 "Fragment end date cannot be later than activity end date.");
 
-//        Preconditions.checkArgument(false == new Duration(fragmentStart,
-//                fragmentEnd).isLongerThan(MAX_FRAGMENT_DURATION), "Fragment cannot be longer than " +
+//        Preconditions.checkArgument(false == new Duration(start,
+//                end).isLongerThan(MAX_FRAGMENT_DURATION), "Fragment cannot be longer than " +
 //                MAX_FRAGMENT_DURATION);
 
         this.activityStart = activityStart;
         this.activityEnd = activityEnd;
-        this.fragmentStart = fragmentStart;
-        this.fragmentEnd = fragmentEnd;
+        this.start = start;
+        this.end = end;
         this.activityName = activityName;
     }
 
@@ -84,15 +85,15 @@ public class ActivityFragment {
     }
 
     public Pair<ActivityFragment, ActivityFragment> splitAtTime(DateTime splitTime) {
-        Preconditions.checkArgument(splitTime.isAfter(fragmentStart), "The split time has to be after the fragment " +
+        Preconditions.checkArgument(splitTime.isAfter(start), "The split time has to be after the fragment " +
                 "start time");
-        Preconditions.checkArgument(splitTime.isBefore(fragmentEnd), "The split time has to be before the fragment " +
+        Preconditions.checkArgument(splitTime.isBefore(end), "The split time has to be before the fragment " +
                 "end time");
 
-        ActivityFragment first = new ActivityFragment(activityName, activityStart, activityEnd, fragmentStart,
+        ActivityFragment first = new ActivityFragment(activityName, activityStart, activityEnd, start,
                 splitTime);
         ActivityFragment second = new ActivityFragment(activityName, activityStart, activityEnd, splitTime,
-                fragmentEnd);
+                end);
 
         return new Pair<ActivityFragment, ActivityFragment>(first, second);
     }
@@ -105,11 +106,11 @@ public class ActivityFragment {
 
         if (false == fragments.isEmpty()) {
             ActivityFragment first = fragments.get(0);
-            Preconditions.checkArgument(false == first.getFragmentStart().isBefore(startTime),
+            Preconditions.checkArgument(false == first.getStart().isBefore(startTime),
                     "The first fragment cannot start before the partitioning period");
 
             ActivityFragment last = fragments.get(fragments.size() - 1);
-            Preconditions.checkArgument(false == last.getFragmentEnd().isAfter(endTime),
+            Preconditions.checkArgument(false == last.getEnd().isAfter(endTime),
                     "The last fragment cannot end after the partitioning period");
         }
 
@@ -122,8 +123,8 @@ public class ActivityFragment {
             DateTime endOfInterval = startOfInterval.plus(interval);
             List<ActivityFragment> intervalFragments = Lists.newArrayList();
 
-            while (fragment != null && fragment.getFragmentStart().isBefore(endOfInterval)) {
-                if (fragment.getFragmentEnd().isAfter(endOfInterval)) {
+            while (fragment != null && fragment.getStart().isBefore(endOfInterval)) {
+                if (fragment.getEnd().isAfter(endOfInterval)) {
                     // Split fragments that cross the hour
                     Pair<ActivityFragment, ActivityFragment> split = fragment.splitAtTime(endOfInterval);
                     intervalFragments.add(split.first);
@@ -139,7 +140,9 @@ public class ActivityFragment {
                 }
             }
 
-            intervals.add(new ActivityInterval(startOfInterval, endOfInterval, intervalFragments));
+            ActivityInterval activityInterval = new ActivityInterval(startOfInterval, endOfInterval, intervalFragments);
+            Log.d(TAG, activityInterval.toString());
+            intervals.add(activityInterval);
             startOfInterval = endOfInterval;
         }
 
@@ -148,21 +151,22 @@ public class ActivityFragment {
 
     public static ActivityFragment mergeAndInterpolate(ActivityFragment first, ActivityFragment second) {
         Preconditions.checkArgument(first.activityName.equals(second.activityName),
-                "Merged activities need to have the same activity name.");
+                "Merged activities need to have the same activity name.  First=" + first + " Second=" + second);
 
         Preconditions.checkArgument(first.activityStart.equals(second.activityStart),
-                "Merged activities need to have the same activity start time.");
+                "Merged activities need to have the same activity start time.  First=" + first + " Second=" + second);
         Preconditions.checkArgument(first.activityEnd.equals(second.activityEnd),
-                "Merged activities need to have the same activity end time.");
+                "Merged activities need to have the same activity end time.  First=" + first + " Second=" + second);
 
-        Preconditions.checkArgument(first.fragmentEnd.isBefore(second.fragmentStart),
-                "The first activity needs to end before the second activity starts when merging.");
+        Preconditions.checkArgument(false == first.end.isAfter(second.start),
+                "The first activity cannot end after the second activity starts when merging.  First=" + first +
+                        " Second=" + second);
 
         return new ActivityFragment(first.getActivityName(), first.getActivityStart(), first.getActivityEnd(),
-                first.getFragmentStart(), second.getFragmentEnd());
+                first.getStart(), second.getEnd());
     }
 
-    public static List<ActivityFragment> combineFragmentsForSameActivities(List<ActivityFragment> splitFragments) {
+    public static List<ActivityFragment> defragment(List<ActivityFragment> splitFragments) {
         List<ActivityFragment> fragments = Lists.newArrayList();
 
         ActivityFragment mergeBlockStart = null;
@@ -173,17 +177,25 @@ public class ActivityFragment {
 
         while (iterator.hasNext()) {
             next = iterator.next();
+            Log.d(TAG, next.toString());
             if (mergeBlockStart == null) {
+                Log.d(TAG, "Start block was null.  Saving fragment in start block.");
                 mergeBlockStart = next;
             } else if (next.isSameActivityAs(mergeBlockStart)) {
+                Log.d(TAG, "Current activity is the same as the start block's.  Writing fragment to the end block.");
                 mergeBlockEnd = next;
             } else if (mergeBlockEnd != null) {
+                Log.d(TAG, "There was an end block, but the current fragment didn't match the start block's activity." +
+                        "  Merging the start and end blocks and resetting the start block.");
                 fragments.add(mergeAndInterpolate(mergeBlockStart, mergeBlockEnd));
-                mergeBlockStart = null;
+                mergeBlockStart = next;
                 mergeBlockEnd = null;
-            } else {
+            } else if(mergeBlockStart != null) {
+                Log.d(TAG, "Have a start block but no end block.  Adding start block and resetting the start block.");
                 fragments.add(mergeBlockStart);
-                mergeBlockStart = null;
+                mergeBlockStart = next;
+            } else {
+                Preconditions.checkArgument(false, "Unexpected end state for main ActivityFragment merge");
             }
         }
 
@@ -192,12 +204,14 @@ public class ActivityFragment {
                 // previous is merge, last one is not
                 fragments.add(mergeAndInterpolate(mergeBlockStart, mergeBlockEnd));
             } else if (mergeBlockStart != null) {
-                // last is non-merge
                 fragments.add(mergeBlockStart);
-                fragments.add(next);
+                // last is non-merge
+                if (next != mergeBlockStart) {
+                    fragments.add(next);
+                }
             } else {
                 // Throw an exception - this should never happen
-                Preconditions.checkArgument(false, "Unexpected end state for ActivityFragment merge");
+                Preconditions.checkArgument(false, "Unexpected end state for end of ActivityFragment merge");
             }
         }
 
@@ -217,16 +231,54 @@ public class ActivityFragment {
         return activityEnd;
     }
 
-    public DateTime getFragmentStart() {
-        return fragmentStart;
+    public DateTime getStart() {
+        return start;
     }
 
-    public DateTime getFragmentEnd() {
-        return fragmentEnd;
+    public DateTime getEnd() {
+        return end;
     }
 
     public boolean isSameActivityAs(ActivityFragment other) {
-        return other != null && activityName.equals(other.activityName) && activityStart.equals(other.fragmentStart) &&
+        return other != null && activityName.equals(other.activityName) && activityStart.equals(other.activityStart) &&
                 activityEnd.equals(other.activityEnd);
+    }
+
+    public Duration getDuration() {
+        return new Duration(start, end);
+    }
+
+    public Duration getActivityDuration() {
+        return new Duration(activityStart, activityEnd);
+    }
+
+    @Override
+    public String toString() {
+        return "ActivityFragment{" +
+                "activityName='" + activityName + '\'' +
+                ", activityStart=" + activityStart +
+                ", activityEnd=" + activityEnd +
+                ", start=" + start +
+                ", end=" + end +
+                '}';
+    }
+
+    public ActivityFragment clipEnd(DateTime end) {
+        if (this.end.isAfter(end)) {
+            return new ActivityFragment(activityName, activityStart, activityEnd, start, end);
+        }
+        return this;
+    }
+
+    public ActivityFragment clipStart(DateTime start) {
+        if (this.start.isBefore(start)) {
+            return new ActivityFragment(activityName, activityStart, activityEnd, start, end);
+        }
+        return this;
+    }
+
+
+    public ActivityFragment clip(DateTime start, DateTime end) {
+        return clipStart(start).clipEnd(end);
     }
 }

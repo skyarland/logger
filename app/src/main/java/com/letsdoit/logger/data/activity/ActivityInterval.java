@@ -29,4 +29,13 @@ public class ActivityInterval {
     public List<ActivityFragment> getFragments() {
         return fragments;
     }
+
+    @Override
+    public String toString() {
+        return "ActivityInterval{" +
+                "startTime=" + startTime +
+                ", endTime=" + endTime +
+                ", fragments=" + fragments +
+                '}';
+    }
 }

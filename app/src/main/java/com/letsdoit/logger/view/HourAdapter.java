@@ -23,7 +23,6 @@ import com.letsdoit.logger.data.activity.ActivityInterval;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
 
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -31,6 +30,8 @@ import java.util.List;
  */
 public class HourAdapter extends ArrayAdapter<Pair<ActivityInterval, ActivityInterval>> {
     private static final String TAG = "ADP_HourAdapter";
+    private static final long HALF_HOUR_MILLIS = 30 * 60 * 1000;
+    private static Period FIVE_MINUTES = Period.minutes(5);
 
     private static int HOUR_FIELD_WIDTH_IN_DIP = 24;
     private static int NUM_BLOCKS_IN_HALF_HOUR = 6;
@@ -68,21 +69,31 @@ public class HourAdapter extends ArrayAdapter<Pair<ActivityInterval, ActivityInt
         }
 
         TextView hourText = (TextView) view.findViewById(R.id.hour);
-        hourText.setText("" + position);
-
-        LinearLayout firstHalfHourLayout = (LinearLayout) view.findViewById(R.id.firstHalfHourLayout);
-        LinearLayout secondHalfHourLayout = (LinearLayout) view.findViewById(R.id.secondHalfHourLayout);
-        sizeChildrenInHalfHour(firstHalfHourLayout);
-        sizeChildrenInHalfHour(secondHalfHourLayout);
 
         Pair<ActivityInterval, ActivityInterval> hourData = getItem(position);
         ActivityInterval firstHalfHour = hourData.first;
         ActivityInterval secondHalfHour = hourData.second;
+        hourText.setText("" + firstHalfHour.getStartTime().getHourOfDay());
 
-        // TODO: add time entry blocks if no activity for the time period
+        List<DisplayBlock> firstHalfHourDisplayBlocks = DisplayBlock.makeDisplayBlocks(firstHalfHour.getStartTime(),
+                firstHalfHour.getEndTime(), FIVE_MINUTES, firstHalfHour.getFragments());
+        List<DisplayBlock> secondHalfHourDisplayBlocks = DisplayBlock.makeDisplayBlocks(secondHalfHour.getStartTime(),
+                secondHalfHour.getEndTime(), FIVE_MINUTES, secondHalfHour.getFragments());
+        Log.d(TAG, "Display blocks in first half hour: " + firstHalfHourDisplayBlocks.size() + " " +
+                firstHalfHourDisplayBlocks);
+        Log.d(TAG, "Display blocks in second half hour: " + secondHalfHourDisplayBlocks.size() + " " +
+                secondHalfHourDisplayBlocks);
+
+        LinearLayout firstHalfHourLayout = (LinearLayout) view.findViewById(R.id.firstHalfHourLayout);
+        LinearLayout secondHalfHourLayout = (LinearLayout) view.findViewById(R.id.secondHalfHourLayout);
+
+        sizeChildrenInHalfHour(firstHalfHourDisplayBlocks, firstHalfHourLayout);
+        sizeChildrenInHalfHour(secondHalfHourDisplayBlocks, secondHalfHourLayout);
 
         return view;
     }
+
+
 
     private Pair<List<ActivityFragment>, List<ActivityFragment>> partitionAtTime(DateTime partition,
                                                                                  List<ActivityFragment> fragments) {
@@ -90,8 +101,8 @@ public class HourAdapter extends ArrayAdapter<Pair<ActivityInterval, ActivityInt
         List<ActivityFragment> second = Lists.newArrayList();
 
         for (ActivityFragment fragment : fragments) {
-            if (fragment.getFragmentStart().isBefore(partition)) {
-                if (fragment.getFragmentEnd().isAfter(partition)) {
+            if (fragment.getStart().isBefore(partition)) {
+                if (fragment.getEnd().isAfter(partition)) {
                     Pair<ActivityFragment, ActivityFragment> beforeAndAfter = fragment.splitAtTime(partition);
                     first.add(beforeAndAfter.first);
                     second.add(beforeAndAfter.second);
@@ -106,35 +117,25 @@ public class HourAdapter extends ArrayAdapter<Pair<ActivityInterval, ActivityInt
         return new Pair(first, second);
     }
 
-    private List<ActivityFragment> mergeFragments(List<ActivityFragment> fragments) {
-        if (fragments.size() < 2) {
-            return fragments;
+    private void sizeChildrenInHalfHour(List<DisplayBlock> halfHour, LinearLayout halfHourLayout) {
+        // Make sure there are enough GUI blocks to display all of the DisplayBlocks
+        while (halfHourLayout.getChildCount() < halfHour.size()) {
+            inflater.inflate(R.layout.disply_block, halfHourLayout, false);
         }
 
-        List<ActivityFragment> mergedFragments = Lists.newArrayList();
-        Iterator<ActivityFragment> iterator = fragments.iterator();
-        ActivityFragment prevFragment = iterator.next();
+        // Resize and update the text on the GUI blocks
+        for(int i = 0; i < halfHour.size(); i++) {
+            DisplayBlock block = halfHour.get(i);
+            double relativeSize = block.getPercentageTimeOfPeriod(HALF_HOUR_MILLIS);
 
-        while (iterator.hasNext()) {
-            ActivityFragment fragment = iterator.next();
-            if (prevFragment.isSameActivityAs(fragment)) {
-                prevFragment = ActivityFragment.mergeAndInterpolate(prevFragment, fragment);
-            } else {
-                mergedFragments.add(prevFragment);
-                prevFragment = fragment;
-            }
-        }
-
-        mergedFragments.add(prevFragment);
-
-        return mergedFragments;
-    }
-
-    private void sizeChildrenInHalfHour(LinearLayout halfHourLayout) {
-
-        for(int i = 0; i < halfHourLayout.getChildCount(); i++) {
             Button button = (Button) halfHourLayout.getChildAt(i);
-            button.getLayoutParams().width = pixelsInHalfHour / NUM_BLOCKS_IN_HALF_HOUR;
+            int buttonWidth = (int) (relativeSize * pixelsInHalfHour);
+            button.getLayoutParams().width = buttonWidth;
+        }
+
+        for (int i = halfHour.size(); i < halfHourLayout.getChildCount(); i++) {
+            Button button = (Button) halfHourLayout.getChildAt(i);
+            button.getLayoutParams().width = 0;
         }
     }
 
