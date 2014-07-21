@@ -1,4 +1,4 @@
-package com.letsdoit.logger.data.activity;
+package com.letsdoit.logger.data.dao;
 
 import android.util.Log;
 import android.util.Pair;

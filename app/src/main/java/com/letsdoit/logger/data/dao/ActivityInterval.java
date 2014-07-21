@@ -1,4 +1,4 @@
-package com.letsdoit.logger.data.activity;
+package com.letsdoit.logger.data.dao;
 
 import org.joda.time.DateTime;
 

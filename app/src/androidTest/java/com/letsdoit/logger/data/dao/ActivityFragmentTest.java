@@ -1,4 +1,4 @@
-package com.letsdoit.logger.data.activity;
+package com.letsdoit.logger.data.dao;
 
 import android.test.AndroidTestCase;
 import android.util.Pair;
@@ -7,7 +7,6 @@ import com.google.common.collect.Lists;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.Period;
 
 import java.util.List;
 

@@ -1,7 +1,6 @@
 package com.letsdoit.logger;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.LoaderManager;
 import android.content.Loader;
 import android.os.Bundle;
@@ -9,16 +8,10 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewParent;
-import android.widget.ArrayAdapter;
-import android.widget.LinearLayout;
-import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.TextView;
 
-import com.google.common.collect.Lists;
-import com.letsdoit.logger.data.activity.ActivityFragment;
-import com.letsdoit.logger.data.activity.CompletedActivityFragmentsDAO;
+import com.letsdoit.logger.data.dao.ActivityFragment;
+import com.letsdoit.logger.data.sqlite.CompletedActivityFragmentsDAO;
 import com.letsdoit.logger.loader.CompletedActivityFragmentLoader;
 import com.letsdoit.logger.view.HourAdapter;
 
@@ -27,9 +20,7 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 
 public class Main extends Activity implements LoaderManager.LoaderCallbacks<List<ActivityFragment>> {
@@ -47,7 +38,7 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
-        this.dao = new CompletedActivityFragmentsDAO();
+        this.dao = new CompletedActivityFragmentsDAO(this);
         this.adapter = new HourAdapter(this);
 
         ListView listView = (ListView) findViewById(R.id.listView);

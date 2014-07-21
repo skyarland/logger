@@ -15,10 +15,9 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.google.common.collect.Lists;
 import com.letsdoit.logger.R;
-import com.letsdoit.logger.data.activity.ActivityFragment;
-import com.letsdoit.logger.data.activity.ActivityInterval;
+import com.letsdoit.logger.data.dao.ActivityFragment;
+import com.letsdoit.logger.data.dao.ActivityInterval;
 
 import org.joda.time.DateTime;
 import org.joda.time.Period;

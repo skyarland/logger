@@ -4,7 +4,7 @@ import android.util.Log;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.letsdoit.logger.data.activity.ActivityFragment;
+import com.letsdoit.logger.data.dao.ActivityFragment;
 
 import org.joda.time.DateTime;
 import org.joda.time.Duration;

@@ -3,8 +3,7 @@ package com.letsdoit.logger.view;
 import android.test.AndroidTestCase;
 
 import com.google.common.collect.Lists;
-import com.letsdoit.logger.data.activity.ActivityFragment;
-import com.letsdoit.logger.data.activity.ActivityInterval;
+import com.letsdoit.logger.data.dao.ActivityFragment;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;

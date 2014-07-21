@@ -4,8 +4,8 @@ import android.content.AsyncTaskLoader;
 import android.content.Context;
 import android.util.Log;
 
-import com.letsdoit.logger.data.activity.ActivityFragment;
-import com.letsdoit.logger.data.activity.CompletedActivityFragmentsDAO;
+import com.letsdoit.logger.data.dao.ActivityFragment;
+import com.letsdoit.logger.data.sqlite.CompletedActivityFragmentsDAO;
 
 import org.joda.time.DateTime;
 
@@ -47,9 +47,11 @@ public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activi
     public List<ActivityFragment> loadInBackground() {
         Log.i(TAG, "+++ loadInBackground() called! +++");
 
+        dao.open();
         // Retrieve activity fragments around the current time
         DateTime now = new DateTime();
         List<ActivityFragment> fragments = dao.getAround(now);
+        dao.close();
 
         return fragments;
     }
