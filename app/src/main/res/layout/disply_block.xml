@@ -6,4 +6,5 @@
     android:layout_height="wrap_content"
     android:text="*"
     android:width="56dp"
+    android:singleLine="true"
     android:onClick="onTimeEntryButtonClick" />

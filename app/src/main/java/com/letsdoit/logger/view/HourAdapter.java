@@ -121,9 +121,8 @@ public class HourAdapter extends ArrayAdapter<Pair<ActivityInterval, ActivityInt
         }
 
         for (int i = halfHour.size(); i < halfHourLayout.getChildCount(); i++) {
-            Log.d(TAG, "Setting button size to 0 for extra buttons");
-            Button button = (Button) halfHourLayout.getChildAt(i);
-            button.getLayoutParams().width = 0;
+            Log.d(TAG, "Removing un-needed display block");
+            halfHourLayout.removeViewAt(i);
         }
     }
 
