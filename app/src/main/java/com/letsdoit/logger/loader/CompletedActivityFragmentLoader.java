@@ -4,12 +4,15 @@ import android.content.AsyncTaskLoader;
 import android.content.Context;
 import android.util.Log;
 
+import com.google.common.base.Preconditions;
 import com.letsdoit.logger.data.dao.ActivityFragment;
 import com.letsdoit.logger.data.sqlite.CompletedActivityFragmentsDAO;
 
 import org.joda.time.DateTime;
 
 import java.util.List;
+
+import static org.joda.time.Period.hours;
 
 /**
  * Created by Andrey on 7/12/2014.
@@ -19,7 +22,11 @@ public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activi
     private static final String TAG = "ADP_CompletedActivityFragmentLoader";
     private static final boolean DEBUG = true;
 
-    final CompletedActivityFragmentsDAO dao;
+    private final CompletedActivityFragmentsDAO dao;
+
+    // The time range we are querying for
+    private DateTime start;
+    private DateTime end;
 
     // We hold a reference to the Loader's data here.
     private List<ActivityFragment> fragments;
@@ -32,6 +39,10 @@ public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activi
         // Context instead, and can be retrieved with a call to getContext().
         super(context);
         this.dao = dao;
+
+        // Load activities for the past 8 hours by default
+        this.end = new DateTime();
+        this.start = end.minus(hours(8));
     }
 
     /****************************************************/
@@ -45,12 +56,14 @@ public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activi
      */
     @Override
     public List<ActivityFragment> loadInBackground() {
+        Preconditions.checkArgument(start != null, "The start time cannot be null.");
+        Preconditions.checkArgument(end != null, "The end time cannot be null.");
+
         Log.i(TAG, "+++ loadInBackground() called! +++");
 
         dao.open();
-        // Retrieve activity fragments around the current time
-        DateTime now = new DateTime();
-        List<ActivityFragment> fragments = dao.getAround(now);
+        // Retrieve activity fragments in the specified range
+        List<ActivityFragment> fragments = dao.getInRange(start, end);
         dao.close();
 
         return fragments;
@@ -193,4 +206,19 @@ public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activi
     /** TODO: (4) Observer which receives notifications when the data changes **/
     /*********************************************************************/
 
+    public void setStart(DateTime start) {
+        this.start = start;
+    }
+
+    public void setEnd(DateTime end) {
+        this.end = end;
+    }
+
+    public DateTime getStart() {
+        return start;
+    }
+
+    public DateTime getEnd() {
+        return end;
+    }
 }

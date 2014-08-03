@@ -42,20 +42,22 @@ public class CompletedActivityFragmentsDAO {
         database.insert(CompletedActivityTable.TABLE_NAME, null, values);
     }
 
-    public List<ActivityFragment> getAround(DateTime dateTime) {
-        Log.d(TAG, "getAround called");
+    public List<ActivityFragment> getInRange(DateTime start, DateTime end) {
+        Log.d(TAG, "getInRange called");
+
         ArrayList<ActivityFragment> fragments = Lists.newArrayList();
-        fragments.addAll(queryInTimeRange(dateTime.minus(hours(8)), dateTime.minusHours(2)));
-        fragments.addAll(getDummyActivityFragments(dateTime.minus(hours(2))));
+        fragments.addAll(queryInTimeRange(start, end));
+        fragments.addAll(getDummyActivityFragments(end));
+
         return ActivityFragment.defragment(fragments);
     }
 
-    private ArrayList<ActivityFragment> getDummyActivityFragments(DateTime start) {
+    private ArrayList<ActivityFragment> getDummyActivityFragments(DateTime end) {
         return Lists.newArrayList(
-                new ActivityFragment("Work Out", start, start.plus(minutes(23))),
-                new ActivityFragment("Stretch", start.plus(minutes(23)), start.plus(minutes(40))),
-                new ActivityFragment("Eat", start.plus(minutes(43)), start.plus(minutes(65))),
-                new ActivityFragment("Program", start.plus(minutes(72)), start.plus(minutes(100)))
+                new ActivityFragment("Work Out", end, end.plus(minutes(23))),
+                new ActivityFragment("Stretch", end.plus(minutes(23)), end.plus(minutes(40))),
+                new ActivityFragment("Eat", end.plus(minutes(43)), end.plus(minutes(65))),
+                new ActivityFragment("Program", end.plus(minutes(72)), end.plus(minutes(100)))
         );
     }
 
@@ -96,4 +98,5 @@ public class CompletedActivityFragmentsDAO {
         return new ActivityFragment(activityName, new DateTime(activityStartMs), new DateTime(activityEndMs),
                 new DateTime(startMs), new DateTime(endMs));
     }
+
 }

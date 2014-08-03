@@ -78,15 +78,20 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
         return new CompletedActivityFragmentLoader(this, dao);
     }
 
+    // Update the adapter with the loaded data
     @Override
     public void onLoadFinished(Loader<List<ActivityFragment>> loader, List<ActivityFragment> data) {
-        DateTime now = new DateTime();
-        DateTime earliestTime = now.minus(Period.hours(8));
-        DateTime latestTime = now.plus(Period.hours(8));
+        CompletedActivityFragmentLoader fragmentLoader = (CompletedActivityFragmentLoader) loader;
+
+        DateTime earliestTime = fragmentLoader.getStart();
+        DateTime latestTime = fragmentLoader.getEnd().plus(Period.hours(8));
+
         this.adapter.setData(data, earliestTime, latestTime);
+
         Log.d(TAG, "onLoadFinished completed");
     }
 
+    // Clear out the loader
     @Override
     public void onLoaderReset(Loader<List<ActivityFragment>> loader) {
         DateTime now = new DateTime();
