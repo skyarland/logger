@@ -1,6 +1,7 @@
 package com.letsdoit.logger;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.LoaderManager;
 import android.content.Loader;
 import android.os.Bundle;
@@ -11,8 +12,10 @@ import android.view.View;
 import android.widget.ListView;
 
 import com.letsdoit.logger.data.dao.ActivityFragment;
+import com.letsdoit.logger.data.dao.ActivityInterval;
 import com.letsdoit.logger.data.sqlite.CompletedActivityFragmentsDAO;
 import com.letsdoit.logger.loader.CompletedActivityFragmentLoader;
+import com.letsdoit.logger.view.DisplayBlock;
 import com.letsdoit.logger.view.HourAdapter;
 
 import org.joda.time.DateTime;
@@ -70,6 +73,20 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
     }
 
     public void onTimeEntryButtonClick(View view) {
+        ActivityInterval block = (ActivityInterval) view.getTag(R.id.display_block_key);
+
+        DateTime start = block.getStart();
+        DateTime end = block.getEnd();
+        String activity = block.isEmpty() ? "Free Time" : block.getActivityFragment(0).getActivityName() ;
+        int width = view.getWidth();
+
+        String message = String.format(
+                "%s\n" +
+                "Start: %s\n" +
+                "End:   %s\n" +
+                "Pixels: %d",
+                activity, start, end, width);
+        new AlertDialog.Builder(this).setMessage(message).show();
     }
 
     @Override

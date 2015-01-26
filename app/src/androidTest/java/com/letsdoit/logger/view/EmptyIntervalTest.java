@@ -2,6 +2,8 @@ package com.letsdoit.logger.view;
 
 import android.test.AndroidTestCase;
 
+import com.letsdoit.logger.data.dao.ActivityInterval;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
@@ -19,83 +21,126 @@ public class EmptyIntervalTest extends AndroidTestCase {
 
     private DateTime time = new DateTime(2014, 7, 17, 10, 30, 0, 0);
 
+    public void testGetNextPartition() {
+
+    }
+
+    /**
+     * |*[--]---|
+     */
     public void testPeriodSmallerThanSpacing() {
-        List<DisplayBlock> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(2)), minutes(5));
+        List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(2)), minutes(5));
 
         assertEquals(1, blocks.size());
 
-        assertEquals(time, blocks.get(0).getEmptyInterval().getStart());
-        assertEquals(time.plus(minutes(2)), blocks.get(0).getEmptyInterval().getEnd());
+        assertEquals(time, blocks.get(0).getStart());
+        assertEquals(time.plus(minutes(2)), blocks.get(0).getEnd());
     }
 
+    /**
+     * |*--[--]-|
+     */
     public void testReferenceDifferentFromStart() {
-        List<DisplayBlock> blocks = EmptyInterval.makeEmptyBlocks(time, time.plus(minutes(2)), time.plus(minutes(4)),
+        List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time.plus(minutes(2)), time.plus(minutes(4)),
                 minutes(5));
 
         assertEquals(1, blocks.size());
 
-        assertEquals(time.plus(minutes(2)), blocks.get(0).getEmptyInterval().getStart());
-        assertEquals(time.plus(minutes(4)), blocks.get(0).getEmptyInterval().getEnd());
+        assertEquals(time.plus(minutes(2)), blocks.get(0).getStart());
+        assertEquals(time.plus(minutes(4)), blocks.get(0).getEnd());
     }
 
+    /**
+     * |*[-----]|
+     */
     public void testPeriodExactlyEqualToSpacing() {
-        List<DisplayBlock> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(5)), minutes(5));
+        List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(5)), minutes(5));
 
         assertEquals(1, blocks.size());
 
-        assertEquals(time, blocks.get(0).getEmptyInterval().getStart());
-        assertEquals(time.plus(minutes(5)), blocks.get(0).getEmptyInterval().getEnd());
+        assertEquals(time, blocks.get(0).getStart());
+        assertEquals(time.plus(minutes(5)), blocks.get(0).getEnd());
     }
 
+    /**
+     * |*[-----]|[--]---|
+     */
     public void testPeriodSlightlyLargerThanSpacing() {
-        List<DisplayBlock> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(7)), minutes(5));
+        List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(7)), minutes(5));
 
         assertEquals(2, blocks.size());
 
-        assertEquals(time, blocks.get(0).getEmptyInterval().getStart());
-        assertEquals(time.plus(minutes(5)), blocks.get(0).getEmptyInterval().getEnd());
+        assertEquals(time, blocks.get(0).getStart());
+        assertEquals(time.plus(minutes(5)), blocks.get(0).getEnd());
 
-        assertEquals(time.plus(minutes(5)), blocks.get(1).getEmptyInterval().getStart());
-        assertEquals(time.plus(minutes(7)), blocks.get(1).getEmptyInterval().getEnd());
+        assertEquals(time.plus(minutes(5)), blocks.get(1).getStart());
+        assertEquals(time.plus(minutes(7)), blocks.get(1).getEnd());
     }
 
-    public void tesetPeriodSplitRelativeToReference() {
-        List<DisplayBlock> blocks = EmptyInterval.makeEmptyBlocks(time.minus(6), time, time.plus(minutes(5)),
+    /**
+     * |----|-*[----]|[-]----|
+     */
+    public void testPeriodSplitRelativeToReference() {
+
+        List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time.minus(minutes(6)), time, time.plus(minutes(5)),
                 minutes(5));
 
         assertEquals(2, blocks.size());
 
-        assertEquals(time, blocks.get(0).getEmptyInterval().getStart());
-        assertEquals(time.plus(minutes(4)), blocks.get(0).getEmptyInterval().getEnd());
+        assertEquals(time, blocks.get(0).getStart());
+        assertEquals(time.plus(minutes(4)), blocks.get(0).getEnd());
 
-        assertEquals(time.plus(minutes(4)), blocks.get(1).getEmptyInterval().getStart());
-        assertEquals(time.plus(minutes(5)), blocks.get(1).getEmptyInterval().getEnd());
+        assertEquals(time.plus(minutes(4)), blocks.get(1).getStart());
+        assertEquals(time.plus(minutes(5)), blocks.get(1).getEnd());
     }
 
-    public void testPeriodIsMultipleOfSpacing() {
-        List<DisplayBlock> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(10)), minutes(5));
+    /**
+     * |*----|-[----]|[-]----|
+     */
+    public void testPeriodSplitRelativeToReference2() {
+        List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time.plus(minutes(6)), time.plus(minutes(11)),
+                minutes(5));
 
         assertEquals(2, blocks.size());
 
-        assertEquals(time, blocks.get(0).getEmptyInterval().getStart());
-        assertEquals(time.plus(minutes(5)), blocks.get(0).getEmptyInterval().getEnd());
+        assertEquals(time.plus(minutes(6)), blocks.get(0).getStart());
+        assertEquals(time.plus(minutes(10)), blocks.get(0).getEnd());
 
-        assertEquals(time.plus(minutes(5)), blocks.get(1).getEmptyInterval().getStart());
-        assertEquals(time.plus(minutes(10)), blocks.get(1).getEmptyInterval().getEnd());
+        assertEquals(time.plus(minutes(10)), blocks.get(1).getStart());
+        assertEquals(time.plus(minutes(11)), blocks.get(1).getEnd());
     }
 
+
+    /**
+     * |*[-----]|[-----]|
+     */
+    public void testPeriodIsMultipleOfSpacing() {
+        List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(10)), minutes(5));
+
+        assertEquals(2, blocks.size());
+
+        assertEquals(time, blocks.get(0).getStart());
+        assertEquals(time.plus(minutes(5)), blocks.get(0).getEnd());
+
+        assertEquals(time.plus(minutes(5)), blocks.get(1).getStart());
+        assertEquals(time.plus(minutes(10)), blocks.get(1).getEnd());
+    }
+
+    /**
+     * |*[-----]|[-----]|[--]---|
+     */
     public void testPeriodWithSpacingsAndRemainder() {
-        List<DisplayBlock> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(12)), minutes(5));
+        List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(12)), minutes(5));
 
         assertEquals(3, blocks.size());
 
-        assertEquals(time, blocks.get(0).getEmptyInterval().getStart());
-        assertEquals(time.plus(minutes(5)), blocks.get(0).getEmptyInterval().getEnd());
+        assertEquals(time, blocks.get(0).getStart());
+        assertEquals(time.plus(minutes(5)), blocks.get(0).getEnd());
 
-        assertEquals(time.plus(minutes(5)), blocks.get(1).getEmptyInterval().getStart());
-        assertEquals(time.plus(minutes(10)), blocks.get(1).getEmptyInterval().getEnd());
+        assertEquals(time.plus(minutes(5)), blocks.get(1).getStart());
+        assertEquals(time.plus(minutes(10)), blocks.get(1).getEnd());
 
-        assertEquals(time.plus(minutes(10)), blocks.get(2).getEmptyInterval().getStart());
-        assertEquals(time.plus(minutes(12)), blocks.get(2).getEmptyInterval().getEnd());
+        assertEquals(time.plus(minutes(10)), blocks.get(2).getStart());
+        assertEquals(time.plus(minutes(12)), blocks.get(2).getEnd());
     }
 }
