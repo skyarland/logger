@@ -19,6 +19,7 @@ import com.letsdoit.logger.data.dao.ActivityFragment;
 import com.letsdoit.logger.data.dao.ActivityInterval;
 
 import org.joda.time.DateTime;
+import org.joda.time.Duration;
 import org.joda.time.Period;
 
 import java.util.List;
@@ -28,8 +29,9 @@ import java.util.List;
  */
 public class HourAdapter extends ArrayAdapter<Hour> {
     private static final String TAG = "ADP_HourAdapter";
-    private static final long HALF_HOUR_MILLIS = 30 * 60 * 1000;
-    private static Period FIVE_MINUTES = Period.minutes(5);
+    private static Duration HALF_HOUR = new Duration(30 * 60 * 1000);
+    private static Duration FIVE_MINUTES = new Duration(5 * 60 * 1000);
+    private static Duration FOUR_MINUTES = new Duration(4 * 60 * 1000);
 
     // The width of the hour label on the left side of the screen
     private static int HOUR_FIELD_WIDTH_IN_DIP = 24;
@@ -92,9 +94,13 @@ public class HourAdapter extends ArrayAdapter<Hour> {
                 secondHalfHour.getEnd(), secondHalfHour.getFragments());
 
         List<ActivityInterval> firstHalfHourDisplayBlocks =
-                DisplayBlock.wrapFragmentsAndClipFreeTime(firstHalfHourInterval, FIVE_MINUTES);
-        List<ActivityInterval> secondHalfHourDisplayBlocks = DisplayBlock.wrapFragmentsAndClipFreeTime
-                (secondHalfHourInterval, FIVE_MINUTES);
+                DisplayBlock.mergeTooSmall(
+                        DisplayBlock.wrapFragmentsAndClipFreeTime(firstHalfHourInterval, FIVE_MINUTES),
+                        FOUR_MINUTES);
+        List<ActivityInterval> secondHalfHourDisplayBlocks =
+                DisplayBlock.mergeTooSmall(
+                        DisplayBlock.wrapFragmentsAndClipFreeTime(secondHalfHourInterval, FIVE_MINUTES),
+                        FOUR_MINUTES);
 
         LinearLayout firstHalfHourLayout = (LinearLayout) view.findViewById(R.id.firstHalfHourLayout);
         LinearLayout secondHalfHourLayout = (LinearLayout) view.findViewById(R.id.secondHalfHourLayout);
@@ -122,7 +128,7 @@ public class HourAdapter extends ArrayAdapter<Hour> {
         // Resize and update the text on the GUI blocks
         for(int i = 0; i < halfHour.size() && i < halfHourLayout.getChildCount(); i++) {
             ActivityInterval block = halfHour.get(i);
-            double relativeSize = block.getPercentageTimeOfPeriod(HALF_HOUR_MILLIS);
+            double relativeSize = block.getPercentageTimeOfPeriod(HALF_HOUR);
 
             Button button = (Button) halfHourLayout.getChildAt(i);
             int buttonWidth = (int) (relativeSize * pixelsInHalfHour * 0.7);

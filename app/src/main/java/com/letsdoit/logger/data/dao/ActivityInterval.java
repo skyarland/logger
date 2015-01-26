@@ -1,5 +1,6 @@
 package com.letsdoit.logger.data.dao;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
 import org.joda.time.DateTime;
@@ -65,8 +66,16 @@ public class ActivityInterval {
         return new ActivityInterval(start, end, Lists.<ActivityFragment>newArrayList());
     }
 
-    public double getPercentageTimeOfPeriod(long intervalMillis) {
-        return (double) duration.getMillis() / (double) intervalMillis;
+    public double getPercentageTimeOfPeriod(Duration interval) {
+        return (double) duration.getMillis() / (double) interval.getMillis();
     }
 
+    public ActivityInterval extendWith(ActivityInterval next) {
+        Preconditions.checkArgument(end.isEqual(next.getStart()),
+                String.format("Extending interval has to start right after current.  " +
+                        "Current: %s.  Next: %s", this, next));
+        List<ActivityFragment> extendedFragments = Lists.newLinkedList(fragments);
+        extendedFragments.addAll(next.getFragments());
+        return new ActivityInterval(start, next.end, extendedFragments);
+    }
 }

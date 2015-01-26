@@ -39,8 +39,9 @@ public class EmptyInterval {
         return new Duration(start, end);
     }
 
-    public static List<ActivityInterval> makeEmptyBlocks(DateTime reference, DateTime start, DateTime end, Period spacing) {
-        Preconditions.checkArgument(false == reference.isAfter(start), "The reference time must be earlier or equal " +
+    public static List<ActivityInterval> makeEmptyBlocks(DateTime reference, DateTime start, DateTime end,
+                                                         Duration spacing) {
+        Preconditions.checkArgument(!reference.isAfter(start), "The reference time must be earlier or equal " +
                 "to the start time.");
         Preconditions.checkArgument(start.isBefore(end), "The start must be earlier than the end.");
         // TODO: make sure the spacing isn't zero
@@ -58,7 +59,7 @@ public class EmptyInterval {
         return blocks;
     }
 
-    protected static DateTime getNextPartition(DateTime reference, DateTime prev, Period spacing) {
+    protected static DateTime getNextPartition(DateTime reference, DateTime prev, Duration spacing) {
         DateTime time = reference;
         while (!time.isAfter(prev)) {
             time = time.plus(spacing);

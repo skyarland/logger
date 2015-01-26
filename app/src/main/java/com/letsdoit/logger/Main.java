@@ -21,8 +21,11 @@ import com.letsdoit.logger.view.HourAdapter;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 
@@ -33,6 +36,8 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
 
     private CompletedActivityFragmentsDAO dao;
     private HourAdapter adapter;
+
+    private static DateTimeFormatter format = DateTimeFormat.forPattern("mm:ss");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,17 +81,28 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
         ActivityInterval block = (ActivityInterval) view.getTag(R.id.display_block_key);
 
         DateTime start = block.getStart();
-        DateTime end = block.getEnd();
-        String activity = block.isEmpty() ? "Free Time" : block.getActivityFragment(0).getActivityName() ;
         int width = view.getWidth();
 
-        String message = String.format(
-                "%s\n" +
-                "Start: %s\n" +
-                "End:   %s\n" +
-                "Pixels: %d",
-                activity, start, end, width);
-        new AlertDialog.Builder(this).setMessage(message).show();
+        Iterator<ActivityFragment> fragmentIter = block.getFragments().iterator();
+        StringBuilder buffer = new StringBuilder();
+        while (start != block.getEnd() && fragmentIter.hasNext()) {
+            ActivityFragment fragment = fragmentIter.next();
+
+            if (start.isBefore(fragment.getStart())) {
+                buffer.append(format.print(start)).append(" Free Time\n");
+            }
+
+            buffer.append(format.print(fragment.getStart()))
+                    .append(" ").append(fragment.getActivityName()).append("\n");
+            start = fragment.getEnd();
+        }
+
+        if (start.isBefore(block.getEnd())) {
+            buffer.append(format.print(start)).append(" Free Time\n");
+        }
+        buffer.append(format.print(block.getEnd())).append(" end.");
+
+        new AlertDialog.Builder(this).setMessage(buffer.toString()).show();
     }
 
     @Override
