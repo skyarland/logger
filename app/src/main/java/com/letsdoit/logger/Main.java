@@ -1,9 +1,10 @@
 package com.letsdoit.logger;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.LoaderManager;
+import android.content.Intent;
 import android.content.Loader;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -15,7 +16,6 @@ import com.letsdoit.logger.data.dao.ActivityFragment;
 import com.letsdoit.logger.data.dao.ActivityInterval;
 import com.letsdoit.logger.data.sqlite.CompletedActivityFragmentsDAO;
 import com.letsdoit.logger.loader.CompletedActivityFragmentLoader;
-import com.letsdoit.logger.view.DisplayBlock;
 import com.letsdoit.logger.view.HourAdapter;
 
 import org.joda.time.DateTime;
@@ -30,6 +30,7 @@ import java.util.List;
 
 
 public class Main extends Activity implements LoaderManager.LoaderCallbacks<List<ActivityFragment>> {
+    public static final String BLOCK_DESCRIPTION = "BlockDescription";
 
     private static final String TAG = "ADP_Main";
     private static final int LOADER_ID = 1;
@@ -37,7 +38,8 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
     private CompletedActivityFragmentsDAO dao;
     private HourAdapter adapter;
 
-    private static DateTimeFormatter format = DateTimeFormat.forPattern("mm:ss");
+    private View cachedStartBlock = null;
+    private ActivityInterval cachedStartInterval = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,29 +82,23 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
     public void onTimeEntryButtonClick(View view) {
         ActivityInterval block = (ActivityInterval) view.getTag(R.id.display_block_key);
 
-        DateTime start = block.getStart();
-        int width = view.getWidth();
-
-        Iterator<ActivityFragment> fragmentIter = block.getFragments().iterator();
-        StringBuilder buffer = new StringBuilder();
-        while (start != block.getEnd() && fragmentIter.hasNext()) {
-            ActivityFragment fragment = fragmentIter.next();
-
-            if (start.isBefore(fragment.getStart())) {
-                buffer.append(format.print(start)).append(" Free Time\n");
-            }
-
-            buffer.append(format.print(fragment.getStart()))
-                    .append(" ").append(fragment.getActivityName()).append("\n");
-            start = fragment.getEnd();
+        if (cachedStartInterval == null) {
+            cachedStartBlock = view;
+            cachedStartInterval = block;
+            view.setAlpha((float) 0.5);
+            return;
         }
 
-        if (start.isBefore(block.getEnd())) {
-            buffer.append(format.print(start)).append(" Free Time\n");
-        }
-        buffer.append(format.print(block.getEnd())).append(" end.");
+        ActivityInterval startBlock = cachedStartInterval;
+        cachedStartBlock.setAlpha(1);
+        cachedStartInterval = null;
+        cachedStartBlock = null;
 
-        new AlertDialog.Builder(this).setMessage(buffer.toString()).show();
+        String message = String.format("%s\n%s", startBlock.stringify(), block.stringify());
+
+        Intent intent = new Intent(this, EnterActivity.class);
+        intent.putExtra(BLOCK_DESCRIPTION, message);
+        startActivity(intent);
     }
 
     @Override
