@@ -30,6 +30,9 @@ dependencies {
     compile group: 'com.google.guava', name: 'guava', version: '15.0'
     compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.0'
     compile group: 'joda-time', name: 'joda-time', version: '1.6.1'
+    compile group: 'com.google.code.gson', name: 'gson', version: '1.7.2'
+    compile group: 'com.fatboyindustrial.gson-jodatime-serialisers', name: 'gson-jodatime-serialisers', version:'1.0.0'
+
 
     androidTestCompile 'org.mockito:mockito-all:1.9.5'
 }

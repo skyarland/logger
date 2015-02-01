@@ -1,10 +1,10 @@
 package com.letsdoit.logger;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.LoaderManager;
 import android.content.Intent;
 import android.content.Loader;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -12,6 +12,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
 
+import com.fatboyindustrial.gsonjodatime.Converters;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.letsdoit.logger.data.dao.ActivityFragment;
 import com.letsdoit.logger.data.dao.ActivityInterval;
 import com.letsdoit.logger.data.sqlite.CompletedActivityFragmentsDAO;
@@ -21,19 +24,20 @@ import com.letsdoit.logger.view.HourAdapter;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
+import java.util.TimeZone;
 
 
 public class Main extends Activity implements LoaderManager.LoaderCallbacks<List<ActivityFragment>> {
-    public static final String BLOCK_DESCRIPTION = "BlockDescription";
+    public static final String START_BLOCK = "StartBlock";
+    public static final String END_BLOCK = "EndBlock";
 
     private static final String TAG = "ADP_Main";
     private static final int LOADER_ID = 1;
+
+    private static final Gson GSON = Converters.registerDateTime(new GsonBuilder()).create();
 
     private CompletedActivityFragmentsDAO dao;
     private HourAdapter adapter;
@@ -43,7 +47,7 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        DateTimeZone.setDefault(DateTimeZone.UTC);
+        DateTimeZone.setDefault(DateTimeZone.forTimeZone(TimeZone.getDefault()));
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -59,6 +63,11 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
         Log.d(TAG, "onCreate completed");
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        getLoaderManager().restartLoader(LOADER_ID, null, this);
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -83,22 +92,34 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
         ActivityInterval block = (ActivityInterval) view.getTag(R.id.display_block_key);
 
         if (cachedStartInterval == null) {
-            cachedStartBlock = view;
-            cachedStartInterval = block;
-            view.setAlpha((float) 0.5);
-            return;
+            // Save the clicked empty block as the start of the selection
+            if (block.isEmpty()) {
+                cachedStartBlock = view;
+                cachedStartInterval = block;
+                view.setAlpha((float) 0.25);
+            } else {
+                new AlertDialog.Builder(this).setMessage(block.stringify()).create().show();
+            }
+        } else {
+            // Clear the start selection
+            ActivityInterval startBlock = cachedStartInterval;
+            cachedStartBlock.setAlpha(1);
+            cachedStartInterval = null;
+            cachedStartBlock = null;
+
+            if(block.isEmpty()) {
+                // Make sure that the selected block is after
+                if (block.getEnd().isAfter(startBlock.getStart())) {
+                    Intent intent = new Intent(this, EnterActivity.class);
+
+                    intent.putExtra(START_BLOCK, GSON.toJson(startBlock));
+                    intent.putExtra(END_BLOCK, GSON.toJson(block));
+                    startActivity(intent);
+                }
+            } else {
+                new AlertDialog.Builder(this).setMessage(block.stringify()).create().show();
+            }
         }
-
-        ActivityInterval startBlock = cachedStartInterval;
-        cachedStartBlock.setAlpha(1);
-        cachedStartInterval = null;
-        cachedStartBlock = null;
-
-        String message = String.format("%s\n%s", startBlock.stringify(), block.stringify());
-
-        Intent intent = new Intent(this, EnterActivity.class);
-        intent.putExtra(BLOCK_DESCRIPTION, message);
-        startActivity(intent);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.letsdoit.logger.view;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -87,6 +88,11 @@ public class HourAdapter extends ArrayAdapter<Hour> {
         ActivityInterval firstHalfHour = hourData.getFirstHalfHour();
         ActivityInterval secondHalfHour = hourData.getSecondHalfHour();
         hourText.setText("" + firstHalfHour.getStart().getHourOfDay());
+
+        DateTime now = DateTime.now();
+        if (!firstHalfHour.getStart().isAfter(now) && !secondHalfHour.getEnd().isBefore(now)) {
+            hourText.setTextColor(Color.BLUE);
+        }
 
         ActivityInterval firstHalfHourInterval = new ActivityInterval(firstHalfHour.getStart(), firstHalfHour.getEnd(),
                 firstHalfHour.getFragments());
