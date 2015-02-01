@@ -28,7 +28,7 @@ public class DisplayBlockTest extends AndroidTestCase {
     public void testEmptyPeriodWithAlignedPartition() {
         List<ActivityFragment> fragments = Lists.newArrayList();
         ActivityInterval interval = new ActivityInterval(start, start.plus(minutes(15)), fragments);
-        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5));
+        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5).toStandardDuration());
 
         assertEquals(blocks.size(), 3);
 
@@ -51,7 +51,7 @@ public class DisplayBlockTest extends AndroidTestCase {
     public void testEmptyPeriodWithUnalignedPartition() {
         List<ActivityFragment> fragments = Lists.newArrayList();
         ActivityInterval interval = new ActivityInterval(start, start.plus(minutes(12)), fragments);
-        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5));
+        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5).toStandardDuration());
 
         assertEquals(3, blocks.size());
 
@@ -74,7 +74,7 @@ public class DisplayBlockTest extends AndroidTestCase {
     public void testEmptyPeriodEndBeforePartition() {
         List<ActivityFragment> fragments = Lists.newArrayList();
         ActivityInterval interval = new ActivityInterval(start, start.plus(minutes(4)), fragments);
-        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5));
+        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5).toStandardDuration());
 
         assertEquals(blocks.size(), 1);
 
@@ -89,7 +89,7 @@ public class DisplayBlockTest extends AndroidTestCase {
     public void testEmptyPeriodExactPartition() {
         List<ActivityFragment> fragments = Lists.newArrayList();
         ActivityInterval interval = new ActivityInterval(start, start.plus(minutes(5)), fragments);
-        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5));
+        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5).toStandardDuration());
 
         assertEquals(blocks.size(), 1);
 
@@ -106,7 +106,7 @@ public class DisplayBlockTest extends AndroidTestCase {
                 start.minus(minutes(11)),
                 start.minus(minutes(4))));
         ActivityInterval interval = new ActivityInterval(start, start.plus(minutes(10)), fragments);
-        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5));
+        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5).toStandardDuration());
 
         assertEquals(blocks.size(), 2);
 
@@ -128,7 +128,7 @@ public class DisplayBlockTest extends AndroidTestCase {
         List<ActivityFragment> fragments = Lists.newArrayList(sleeping);
 
         ActivityInterval interval = new ActivityInterval(start, start.plus(minutes(10)), fragments);
-        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5));
+        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5).toStandardDuration());
 
         assertEquals("" + blocks, 3, blocks.size());
 
@@ -157,7 +157,7 @@ public class DisplayBlockTest extends AndroidTestCase {
         List<ActivityFragment> fragments = Lists.newArrayList(sleeping);
 
         ActivityInterval interval = new ActivityInterval(start, start.plus(minutes(15)), fragments);
-        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5));
+        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5).toStandardDuration());
 
         assertEquals("" + blocks, 1, blocks.size());
 
@@ -176,7 +176,7 @@ public class DisplayBlockTest extends AndroidTestCase {
         List<ActivityFragment> fragments = Lists.newArrayList(sleeping);
 
         ActivityInterval interval = new ActivityInterval(start, start.plus(minutes(15)), fragments);
-        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5));
+        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5).toStandardDuration());
 
         assertEquals("" + blocks, 2, blocks.size());
 
@@ -198,7 +198,7 @@ public class DisplayBlockTest extends AndroidTestCase {
         List<ActivityFragment> fragments = Lists.newArrayList(sleeping);
 
         ActivityInterval interval = new ActivityInterval(start, start.plus(minutes(15)), fragments);
-        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5));
+        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5).toStandardDuration());
 
         assertEquals("" + blocks, 3, blocks.size());
 
@@ -223,7 +223,7 @@ public class DisplayBlockTest extends AndroidTestCase {
         List<ActivityFragment> fragments = Lists.newArrayList(sleeping);
 
         ActivityInterval interval = new ActivityInterval(start, start.plus(minutes(15)), fragments);
-        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5));
+        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5).toStandardDuration());
 
         assertEquals("" + blocks, 1, blocks.size());
 
@@ -241,7 +241,7 @@ public class DisplayBlockTest extends AndroidTestCase {
 
         List<ActivityFragment> fragments = Lists.newArrayList(eating, sleeping);
         ActivityInterval interval = new ActivityInterval(start, start.plus(minutes(15)), fragments);
-        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5));
+        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5).toStandardDuration());
 
         assertEquals("" + blocks, 3, blocks.size());
 
@@ -270,7 +270,7 @@ public class DisplayBlockTest extends AndroidTestCase {
         List<ActivityFragment> fragments = Lists.newArrayList(chatting, reading);
 
         ActivityInterval interval = new ActivityInterval(start, start.plus(minutes(30)), fragments);
-        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5));
+        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5).toStandardDuration());
 
         assertEquals("" + blocks, 7, blocks.size());
 
@@ -313,7 +313,7 @@ public class DisplayBlockTest extends AndroidTestCase {
         List<ActivityFragment> fragments = Lists.newArrayList(chatting, reading);
 
         ActivityInterval interval = new ActivityInterval(start, start.plus(minutes(30)), fragments);
-        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5));
+        List<ActivityInterval> blocks = DisplayBlock.wrapFragmentsAndClipFreeTime(interval, minutes(5).toStandardDuration());
 
         assertEquals("" + blocks, 6, blocks.size());
 
@@ -341,4 +341,6 @@ public class DisplayBlockTest extends AndroidTestCase {
         assertEquals(start.plus(minutes(30)), blocks.get(5).getEnd());
         assertTrue(blocks.get(5).isEmpty());
     }
+
+    // TODO: Add more merging test cases
 }

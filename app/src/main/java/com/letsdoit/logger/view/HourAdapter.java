@@ -111,13 +111,14 @@ public class HourAdapter extends ArrayAdapter<Hour> {
         LinearLayout firstHalfHourLayout = (LinearLayout) view.findViewById(R.id.firstHalfHourLayout);
         LinearLayout secondHalfHourLayout = (LinearLayout) view.findViewById(R.id.secondHalfHourLayout);
 
-        sizeChildrenInHalfHour(firstHalfHourDisplayBlocks, firstHalfHourLayout);
-        sizeChildrenInHalfHour(secondHalfHourDisplayBlocks, secondHalfHourLayout);
+        sizeChildrenInHalfHour(firstHalfHourDisplayBlocks, firstHalfHourLayout, false);
+        sizeChildrenInHalfHour(secondHalfHourDisplayBlocks, secondHalfHourLayout, true);
 
         return view;
     }
 
-    private void sizeChildrenInHalfHour(List<ActivityInterval> halfHour, LinearLayout halfHourLayout) {
+    private void sizeChildrenInHalfHour(List<ActivityInterval> halfHour, LinearLayout halfHourLayout,
+                                        boolean isSecondHalf) {
         // Make sure there are enough GUI blocks to display all of the DisplayBlocks
         int numAdditionalButtonsNeeded = halfHour.size() - halfHourLayout.getChildCount();
 
@@ -145,8 +146,12 @@ public class HourAdapter extends ArrayAdapter<Hour> {
             
             button.setTag(R.id.display_block_key, block);
 
-            if (block.getStart().isAfter(now)) {
-                button.setAlpha((float) 0.5);
+            if (isSecondHalf) {
+                button.setAlpha((float) 0.50);
+            }
+
+            if (block.getEnd().isAfter(now)) {
+                button.setAlpha((float) 0.25);
             }
 
             if (block.isEmpty()) {

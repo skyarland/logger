@@ -42,23 +42,21 @@ public class CompletedActivityFragmentsDAO {
         database.insert(CompletedActivityTable.TABLE_NAME, null, values);
     }
 
+    /**
+     * Make sure that the fragment doesn't overlap with any other fragments
+     * @param fragment
+     */
+    public void addWithoutOverlap(ActivityFragment fragment) {
+
+    }
+
     public List<ActivityFragment> getInRange(DateTime start, DateTime end) {
         Log.d(TAG, "getInRange called");
 
         ArrayList<ActivityFragment> fragments = Lists.newArrayList();
         fragments.addAll(queryInTimeRange(start, end));
-        // fragments.addAll(getDummyActivityFragments(end.plus(hours(3))));
 
         return ActivityFragment.defragment(fragments);
-    }
-
-    private ArrayList<ActivityFragment> getDummyActivityFragments(DateTime end) {
-        return Lists.newArrayList(
-                new ActivityFragment("Work Out", end, end.plus(minutes(23))),
-                new ActivityFragment("Stretch", end.plus(minutes(23)), end.plus(minutes(40))),
-                new ActivityFragment("Eat", end.plus(minutes(43)), end.plus(minutes(65))),
-                new ActivityFragment("Program", end.plus(minutes(72)), end.plus(minutes(100)))
-        );
     }
 
     public void open() throws SQLException {

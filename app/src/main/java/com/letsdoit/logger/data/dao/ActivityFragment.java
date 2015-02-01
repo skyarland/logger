@@ -101,16 +101,16 @@ public class ActivityFragment {
     public static List<ActivityInterval> partition(DateTime startTime, DateTime endTime, Period interval,
                                                          List<ActivityFragment> fragments) {
 
-        Preconditions.checkArgument(startTime.isBefore(endTime), "The partition start time must be before the " +
+        Preconditions.checkArgument(!startTime.isAfter(endTime), "The partition start time must not be after the " +
                 "partition end time");
 
         if (!fragments.isEmpty()) {
             ActivityFragment first = fragments.get(0);
-            Preconditions.checkArgument(false == first.getStart().isBefore(startTime),
+            Preconditions.checkArgument(!first.getStart().isBefore(startTime),
                     "The first fragment cannot start before the partitioning period");
 
             ActivityFragment last = fragments.get(fragments.size() - 1);
-            Preconditions.checkArgument(false == last.getEnd().isAfter(endTime),
+            Preconditions.checkArgument(!last.getEnd().isAfter(endTime),
                     "The last fragment cannot end after the partitioning period");
         }
 
@@ -158,7 +158,7 @@ public class ActivityFragment {
         Preconditions.checkArgument(first.activityEnd.equals(second.activityEnd),
                 "Merged activities need to have the same activity end time.  First=" + first + " Second=" + second);
 
-        Preconditions.checkArgument(false == first.end.isAfter(second.start),
+        Preconditions.checkArgument(!first.end.isAfter(second.start),
                 "The first activity cannot end after the second activity starts when merging.  First=" + first +
                         " Second=" + second);
 

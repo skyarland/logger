@@ -92,7 +92,7 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
         ActivityInterval block = (ActivityInterval) view.getTag(R.id.display_block_key);
 
         // Don't allow selections in the future
-        if (block.getStart().isAfter(DateTime.now())) {
+        if (block.getEnd().isAfter(DateTime.now())) {
             return;
         }
 
@@ -106,23 +106,31 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
                 new AlertDialog.Builder(this).setMessage(block.stringify()).create().show();
             }
         } else {
-            // Clear the start selection
-            ActivityInterval startBlock = cachedStartInterval;
-            cachedStartBlock.setAlpha(1);
-            cachedStartInterval = null;
-            cachedStartBlock = null;
+            dao.open();
+            List<ActivityFragment> activitiesInInterval = dao.getInRange(cachedStartInterval.getStart(), block.getEnd());
+            dao.close();
+            Log.d(TAG, String.format("Num activities in selection: %s", activitiesInInterval.size()));
 
-            if(block.isEmpty()) {
-                // Make sure that the selected block is after
-                if (block.getEnd().isAfter(startBlock.getStart())) {
-                    Intent intent = new Intent(this, EnterActivity.class);
+            // Don't create activity if it overlaps with another activity
+            if (activitiesInInterval.isEmpty()) {
+                // Clear the start selection
+                ActivityInterval startBlock = cachedStartInterval;
+                cachedStartBlock.setAlpha(1);
+                cachedStartInterval = null;
+                cachedStartBlock = null;
 
-                    intent.putExtra(START_BLOCK, GSON.toJson(startBlock));
-                    intent.putExtra(END_BLOCK, GSON.toJson(block));
-                    startActivity(intent);
+                if (block.isEmpty()) {
+                    // Make sure that the selected block is after
+                    if (block.getEnd().isAfter(startBlock.getStart())) {
+                        Intent intent = new Intent(this, EnterActivity.class);
+
+                        intent.putExtra(START_BLOCK, GSON.toJson(startBlock));
+                        intent.putExtra(END_BLOCK, GSON.toJson(block));
+                        startActivity(intent);
+                    }
+                } else {
+                    new AlertDialog.Builder(this).setMessage(block.stringify()).create().show();
                 }
-            } else {
-                new AlertDialog.Builder(this).setMessage(block.stringify()).create().show();
             }
         }
     }

@@ -109,8 +109,8 @@ public class DisplayBlock {
                 blocks.add(ActivityInterval.fromFragment(fragment.clipEnd(end)));
             } else {
                 // This should never happen
-                Preconditions.checkArgument(false, "Activity fragment " + fragment + " starts before the previous " +
-                        "fragment ends " + prevFragmentEnd);
+                Log.e(TAG, String.format("Activity fragment %s starts before the previous  fragment ends %s",
+                        fragment, prevFragmentEnd));
             }
             prevFragmentEnd = fragment.getEnd();
         }

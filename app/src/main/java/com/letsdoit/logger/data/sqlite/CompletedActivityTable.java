@@ -56,7 +56,7 @@ public class CompletedActivityTable {
         database.execSQL(SQL_CREATE_INDEX);
     }
 
-    public static final String QUERY_FRAGMENT_WHERE = COLUMN_START + " between ? and ?";
+    public static final String QUERY_FRAGMENT_WHERE = COLUMN_START + " >= ? and " + COLUMN_END + " <= ?";
 
     // TODO: Delete this once the database starts really being used
     private static void add(SQLiteDatabase database, ActivityFragment fragment) {
