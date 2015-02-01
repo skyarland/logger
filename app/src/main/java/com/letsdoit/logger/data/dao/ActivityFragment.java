@@ -104,7 +104,7 @@ public class ActivityFragment {
         Preconditions.checkArgument(startTime.isBefore(endTime), "The partition start time must be before the " +
                 "partition end time");
 
-        if (false == fragments.isEmpty()) {
+        if (!fragments.isEmpty()) {
             ActivityFragment first = fragments.get(0);
             Preconditions.checkArgument(false == first.getStart().isBefore(startTime),
                     "The first fragment cannot start before the partitioning period");
@@ -116,7 +116,7 @@ public class ActivityFragment {
 
         List<ActivityInterval> intervals = Lists.newArrayList();
         Iterator<ActivityFragment> fragmentIterator = fragments.iterator();
-        ActivityFragment fragment = fragmentIterator.next();
+        ActivityFragment fragment = fragmentIterator.hasNext() ? fragmentIterator.next() : null;
         DateTime startOfInterval = startTime;
 
         while (startOfInterval.isBefore(endTime)) {

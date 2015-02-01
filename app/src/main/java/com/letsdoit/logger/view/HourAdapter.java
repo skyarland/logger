@@ -131,17 +131,23 @@ public class HourAdapter extends ArrayAdapter<Hour> {
 //            halfHourLayout.removeViewAt(i);
 //        }
 
+        DateTime now = DateTime.now();
+
         // Resize and update the text on the GUI blocks
         for(int i = 0; i < halfHour.size() && i < halfHourLayout.getChildCount(); i++) {
             ActivityInterval block = halfHour.get(i);
             double relativeSize = block.getPercentageTimeOfPeriod(HALF_HOUR);
 
             Button button = (Button) halfHourLayout.getChildAt(i);
-            int buttonWidth = (int) (relativeSize * pixelsInHalfHour * 0.7);
+            int buttonWidth = (int) (relativeSize * pixelsInHalfHour * 0.9);
             Log.d(TAG, String.format("rel: %.2f, abs; %d", relativeSize, buttonWidth));
             button.setWidth(buttonWidth);
             
             button.setTag(R.id.display_block_key, block);
+
+            if (block.getStart().isAfter(now)) {
+                button.setAlpha((float) 0.5);
+            }
 
             if (block.isEmpty()) {
                 button.setText("");

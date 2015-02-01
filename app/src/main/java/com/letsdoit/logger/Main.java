@@ -91,6 +91,11 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
     public void onTimeEntryButtonClick(View view) {
         ActivityInterval block = (ActivityInterval) view.getTag(R.id.display_block_key);
 
+        // Don't allow selections in the future
+        if (block.getStart().isAfter(DateTime.now())) {
+            return;
+        }
+
         if (cachedStartInterval == null) {
             // Save the clicked empty block as the start of the selection
             if (block.isEmpty()) {

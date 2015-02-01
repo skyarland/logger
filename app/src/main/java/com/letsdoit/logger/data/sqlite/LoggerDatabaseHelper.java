@@ -14,7 +14,7 @@ public class LoggerDatabaseHelper extends SQLiteOpenHelper {
 
     public static final String DATABASE_NAME = "activities.db";
 
-    private static final int DATABASE_VERSION = 4;
+    private static final int DATABASE_VERSION = 5;
 
     public LoggerDatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -51,13 +51,11 @@ public class LoggerDatabaseHelper extends SQLiteOpenHelper {
         // Perform all of the database upgrades in order, starting from the current version
         switch (currentVersion) {
             case 1:
-                // Messed up table creation - end column was endinteger
             case 2:
-                // Forgot to call move method when bumped to version 2
             case 3:
-                // If you drop a table... you should re-create it! (forgot to when moving from 2 to 3)
-                CompletedActivityTable.moveFromVersion3To4(db);
             case 4:
+                // All table versions up to 5 were static testing databses.  From 5 onward, we have real user data!
+                CompletedActivityTable.moveFromVersion4To5(db);
             case 5:
             case 6:
             case 7:

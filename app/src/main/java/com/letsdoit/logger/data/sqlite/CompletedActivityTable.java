@@ -54,16 +54,6 @@ public class CompletedActivityTable {
     public static void createTable(SQLiteDatabase database) {
         database.execSQL(SQL_CREATE_TABLE);
         database.execSQL(SQL_CREATE_INDEX);
-
-        DateTime now = new DateTime();
-
-        // The dummy data starts 2 hours from whenever "now" is when the user opens the app.
-        // So our dummy data should not overlap with this.
-        add(database, new ActivityFragment("Code", now.minus(hours(4)), now.minus(hours(3)).minus(minutes(20))));
-        add(database, new ActivityFragment("Test", now.minus(hours(3)).minus(minutes(20)), now.minus(hours(3))));
-        add(database, new ActivityFragment("Play", now.minus(hours(3)), now.minus(hours(2)).minus(minutes(40))));
-        add(database, new ActivityFragment("Eat", now.minus(hours(2)).minus(minutes(30)),
-                now.minus(hours(2)).minus(minutes(10))));
     }
 
     public static final String QUERY_FRAGMENT_WHERE = COLUMN_START + " between ? and ?";
@@ -83,7 +73,7 @@ public class CompletedActivityTable {
     // This is a utility class with only static members.  Don't allow instantiation.
     private CompletedActivityTable() {}
 
-    public static void moveFromVersion3To4(SQLiteDatabase database) {
+    public static void moveFromVersion4To5(SQLiteDatabase database) {
         Log.d(TAG, "Dropping index and table");
 
         database.execSQL("DROP INDEX IF EXISTS " + TABLE_INDEX_NAME);

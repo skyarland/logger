@@ -47,7 +47,7 @@ public class CompletedActivityFragmentsDAO {
 
         ArrayList<ActivityFragment> fragments = Lists.newArrayList();
         fragments.addAll(queryInTimeRange(start, end));
-        fragments.addAll(getDummyActivityFragments(end.plus(hours(3))));
+        // fragments.addAll(getDummyActivityFragments(end.plus(hours(3))));
 
         return ActivityFragment.defragment(fragments);
     }
