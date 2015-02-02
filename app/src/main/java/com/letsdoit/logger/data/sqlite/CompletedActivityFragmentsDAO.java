@@ -11,18 +11,26 @@ import com.google.common.collect.Lists;
 import com.letsdoit.logger.data.dao.ActivityFragment;
 
 import org.joda.time.DateTime;
+import org.joda.time.Duration;
+import org.joda.time.Period;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.joda.time.Period.hours;
-import static org.joda.time.Period.minutes;
 
 /**
  * Created by Andrey on 7/12/2014.
  */
 public class CompletedActivityFragmentsDAO {
     private static final String TAG = "ADP_CompletedActivityFragmentsDAO";
+
+    /**
+     * An activity that was happening at a specific instant will have a fragment that started no longer than this
+     * duration relative to the instant and ended no later than this duration relative to this instant.  This makes
+     * figuring out "what activities were happening in this hour" much simpler than having to try to figure out when
+     * the previous activity that ran into this hour started or whether there was an activity that started in this
+     * hour and ran over.
+     */
+    private static final Duration MAX_FRAGMENT_DURATION = Period.hours(1).toStandardDuration();
 
     private SQLiteDatabase database;
     private LoggerDatabaseHelper dbHelper;
@@ -31,7 +39,14 @@ public class CompletedActivityFragmentsDAO {
         this.dbHelper = new LoggerDatabaseHelper(context);
     }
 
-    public void add(ActivityFragment fragment) {
+    public void addCompletedActivity(ActivityFragment activity) {
+        List<ActivityFragment> fragments = ActivityFragment.fragment(activity, MAX_FRAGMENT_DURATION);
+        for (ActivityFragment fragment : fragments) {
+            addFragment(fragment);
+        }
+    }
+
+    private void addFragment(ActivityFragment fragment) {
         ContentValues values = new ContentValues();
         values.put(CompletedActivityTable.COLUMN_ACTIVITY_NAME, fragment.getActivityName());
         values.put(CompletedActivityTable.COLUMN_ACTIVITY_START, fragment.getActivityStart().getMillis());
@@ -70,10 +85,13 @@ public class CompletedActivityFragmentsDAO {
     public List<ActivityFragment> queryInTimeRange(DateTime intervalStart, DateTime intervalEnd) {
         List<ActivityFragment> fragments = Lists.newArrayList();
 
-        String[] selectionArgs = {Long.toString(intervalStart.getMillis()), Long.toString(intervalEnd.getMillis())};
+        String beginningStartTime = Long.toString(intervalStart.getMillis());
+        String endingStartTime = Long.toString(intervalEnd.getMillis());
+
+        String[] selectionArgs = {beginningStartTime, endingStartTime};
         Cursor cursor = database.query(CompletedActivityTable.TABLE_NAME,
-                CompletedActivityTable.ALL_COLUMNS, CompletedActivityTable.QUERY_FRAGMENT_WHERE, selectionArgs, null,
-                null, null);
+                CompletedActivityTable.ALL_COLUMNS, CompletedActivityTable.QUERY_FRAGMENT_ON_START_TIME,
+                selectionArgs, null, null, null);
 
         cursor.moveToFirst();
         while (!cursor.isAfterLast()) {

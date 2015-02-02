@@ -37,15 +37,6 @@ import java.util.List;
 public class ActivityFragment {
     private static final String TAG = "ADP_ActivityFragment";
 
-    /**
-     * An activity that was happening at a specific instant will have a fragment that started no longer than this
-     * duration relative to the instant and ended no later than this duration relative to this instant.  This makes
-     * figuring out "what activities were happening in this hour" much simpler than having to try to figure out when
-     * the previous activity that ran into this hour started or whether there was an activity that started in this
-     * hour and ran over.
-     */
-    // private static final Duration MAX_FRAGMENT_DURATION = new Duration(60 * 60 * 1000);
-
     private final String activityName;
 
     private final DateTime activityStart;
@@ -56,7 +47,7 @@ public class ActivityFragment {
 
     public ActivityFragment(String activityName, DateTime activityStart, DateTime activityEnd, DateTime start,
                             DateTime end) {
-        Preconditions.checkArgument(false == StringUtils.isEmpty(activityName), "Activity name cannot be empty.");
+        Preconditions.checkArgument(!StringUtils.isEmpty(activityName), "Activity name cannot be empty.");
 
         Preconditions.checkArgument(activityStart.isBefore(activityEnd),
                 "Activity start date must be before the end date.");
@@ -64,9 +55,9 @@ public class ActivityFragment {
         Preconditions.checkArgument(start.isBefore(end),
                 "Fragment start date must be before fragment end date.");
 
-        Preconditions.checkArgument(false == activityStart.isAfter(start),
+        Preconditions.checkArgument(!activityStart.isAfter(start),
                 "Fragment start date cannot be earlier than activity start date.");
-        Preconditions.checkArgument(false == activityEnd.isBefore(end),
+        Preconditions.checkArgument(!activityEnd.isBefore(end),
                 "Fragment end date cannot be later than activity end date.");
 
 //        Preconditions.checkArgument(false == new Duration(start,
@@ -164,6 +155,30 @@ public class ActivityFragment {
 
         return new ActivityFragment(first.getActivityName(), first.getActivityStart(), first.getActivityEnd(),
                 first.getStart(), second.getEnd());
+    }
+
+    /**
+     * Split the activity into fragments of at most the specified duration.
+     *
+     * @param activity
+     * @param maxFragmentDuration
+     * @return
+     */
+    public static List<ActivityFragment> fragment(ActivityFragment activity, Duration maxFragmentDuration) {
+        List<ActivityFragment> fragments = Lists.newArrayList();
+
+        DateTime splitTime;
+        ActivityFragment rest = activity;
+        for (splitTime = activity.getStart().plus(maxFragmentDuration);
+             splitTime.isBefore(activity.getEnd());
+             splitTime = splitTime.plus(maxFragmentDuration)) {
+            Pair<ActivityFragment, ActivityFragment> firstRest = rest.splitAtTime(splitTime);
+            fragments.add(firstRest.first);
+            rest = firstRest.second;
+        }
+        fragments.add(rest);
+
+        return fragments;
     }
 
     public static List<ActivityFragment> defragment(List<ActivityFragment> splitFragments) {

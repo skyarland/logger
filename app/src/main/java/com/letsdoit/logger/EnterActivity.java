@@ -1,7 +1,6 @@
 package com.letsdoit.logger;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
@@ -19,7 +18,6 @@ import com.letsdoit.logger.data.sqlite.CompletedActivityFragmentsDAO;
 
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.DateTimeFormatterBuilder;
 
 public class EnterActivity extends Activity {
     private static final Gson GSON = Converters.registerDateTime(new GsonBuilder()).create();
@@ -72,7 +70,7 @@ public class EnterActivity extends Activity {
         String activityName = activityNameView.getText().toString();
         dao.open();
         ActivityFragment fragment = new ActivityFragment(activityName, start.getStart(), end.getEnd());
-        dao.add(fragment);
+        dao.addCompletedActivity(fragment);
         dao.close();
         finish();
     }
