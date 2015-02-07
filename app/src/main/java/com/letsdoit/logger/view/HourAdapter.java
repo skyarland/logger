@@ -69,18 +69,13 @@ public class HourAdapter extends ArrayAdapter<Hour> {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        Log.d(TAG, "getView called");
 
         View view;
-//        if (convertView == null) {
-//            Log.d(TAG, "Inflating new hour.");
-//            view = inflater.inflate(R.layout.hour, parent, false);
-//        } else {
-//            Log.d(TAG, "Reusing hour layout.");
-//            view = convertView;
-//        }
-
-        view = inflater.inflate(R.layout.hour, parent, false);
+        if (convertView == null) {
+            view = inflater.inflate(R.layout.hour, parent, false);
+        } else {
+            view = convertView;
+        }
 
         TextView hourText = (TextView) view.findViewById(R.id.hour);
 
@@ -92,6 +87,8 @@ public class HourAdapter extends ArrayAdapter<Hour> {
         DateTime now = DateTime.now();
         if (!firstHalfHour.getStart().isAfter(now) && !secondHalfHour.getEnd().isBefore(now)) {
             hourText.setTextColor(Color.BLUE);
+        } else {
+            hourText.setTextColor(Color.BLACK);
         }
 
         ActivityInterval firstHalfHourInterval = new ActivityInterval(firstHalfHour.getStart(), firstHalfHour.getEnd(),
@@ -120,38 +117,37 @@ public class HourAdapter extends ArrayAdapter<Hour> {
     private void sizeChildrenInHalfHour(List<ActivityInterval> halfHour, LinearLayout halfHourLayout,
                                         boolean isSecondHalf) {
         // Make sure there are enough GUI blocks to display all of the DisplayBlocks
-        int numAdditionalButtonsNeeded = halfHour.size() - halfHourLayout.getChildCount();
+        int numButtons = halfHourLayout.getChildCount();
+        int numDisplayBlocks = halfHour.size();
+        int numAdditionalButtonsNeeded = numDisplayBlocks - numButtons;
 
         for (int i = 0; i < numAdditionalButtonsNeeded; i++) {
-            Log.d(TAG, "Inflating additional buttons needed for display");
             inflater.inflate(R.layout.disply_block, halfHourLayout, true);
         }
-//
-//        for (int i = halfHour.size(); i < halfHourLayout.getChildCount(); i++) {
-//            Log.d(TAG, "Removing un-needed display block");
-//            halfHourLayout.removeViewAt(i);
-//        }
+
+        for (int i = numDisplayBlocks; i < numButtons; i++) {
+            halfHourLayout.removeViewAt(numDisplayBlocks);
+        }
 
         DateTime now = DateTime.now();
 
         // Resize and update the text on the GUI blocks
-        for(int i = 0; i < halfHour.size() && i < halfHourLayout.getChildCount(); i++) {
+        for(int i = 0; i < numDisplayBlocks; i++) {
             ActivityInterval block = halfHour.get(i);
             double relativeSize = block.getPercentageTimeOfPeriod(HALF_HOUR);
 
             Button button = (Button) halfHourLayout.getChildAt(i);
             int buttonWidth = (int) (relativeSize * pixelsInHalfHour * 0.9);
-            Log.d(TAG, String.format("rel: %.2f, abs; %d", relativeSize, buttonWidth));
             button.setWidth(buttonWidth);
             
             button.setTag(R.id.display_block_key, block);
 
             if (isSecondHalf) {
                 button.setAlpha((float) 0.50);
-            }
-
-            if (block.getEnd().isAfter(now)) {
+            } else if (block.getEnd().isAfter(now)) {
                 button.setAlpha((float) 0.25);
+            } else {
+                button.setAlpha(1);
             }
 
             if (block.isEmpty()) {
@@ -161,7 +157,6 @@ public class HourAdapter extends ArrayAdapter<Hour> {
                     button.setText("");
                 } else {
                     String activityName = block.getActivityFragment(0).getActivityName();
-                    Log.d(TAG, "Updating button text with activity name " + activityName);
                     button.setText(activityName);
                 }
             }

@@ -76,36 +76,36 @@ public class DisplayBlock {
         List<ActivityFragment> fragments = interval.getFragments();
 
         Preconditions.checkArgument(start.isBefore(end), "The start time needs to be before the end time.");
-        Log.d(TAG, "Start=[" + start + "] End=[" + end + "]");
+        //Log.d(TAG, "Start=[" + start + "] End=[" + end + "]");
 
         List<ActivityInterval> blocks = Lists.newLinkedList();
         DateTime prevFragmentEnd = start;
 
         for (ActivityFragment fragment : fragments) {
-            Log.d(TAG, "Fragment=[" + fragment + "]");
+            //Log.d(TAG, "Fragment=[" + fragment + "]");
             if (fragment.getEnd().isBefore(start)) {
                 // Skip it, it's not in the specified period
                 Log.d(TAG, "Fragment ends before the start of the interval.  Continuing.");
                 continue;
             } else if (fragment.getStart().isAfter(end)) {
                 // We're past the specified period
-                Log.d(TAG, "Fragment starts after the end of the interval.  Breaking.");
+                //Log.d(TAG, "Fragment starts after the end of the interval.  Breaking.");
                 break;
             } else if (fragment.getStart().isBefore(start)) {
                 // Clip the start
-                Log.d(TAG, "Fragment starts before the interval, but ends inside it.  Clipping start and Adding.");
+                //Log.d(TAG, "Fragment starts before the interval, but ends inside it.  Clipping start and Adding.");
                 blocks.add(ActivityInterval.fromFragment(fragment.clip(start, end)));
             } else if (prevFragmentEnd.isBefore(fragment.getStart())) {
                 // There is empty space between the previous fragment and the current one
                 // Fill it with empty blocks
-                Log.d(TAG, "There is space between the last fragment and the current one.  Adding empty space and " +
-                        "adding the new Fragment afterwards.");
+                //Log.d(TAG, "There is space between the last fragment and the current one.  Adding empty space and " +
+                //        "adding the new Fragment afterwards.");
                 blocks.addAll(EmptyInterval.makeEmptyBlocks(start, prevFragmentEnd, fragment.getStart(), spacing));
                 blocks.add(ActivityInterval.fromFragment(fragment.clipEnd(end)));
             } else if (prevFragmentEnd.equals(fragment.getStart())) {
                 // This fragment starts right after the previous fragment
                 // Render it
-                Log.d(TAG, "Fragment is inside the interval and right after the previous fragment.  Adding.");
+                //Log.d(TAG, "Fragment is inside the interval and right after the previous fragment.  Adding.");
                 blocks.add(ActivityInterval.fromFragment(fragment.clipEnd(end)));
             } else {
                 // This should never happen
@@ -116,7 +116,7 @@ public class DisplayBlock {
         }
 
         if (prevFragmentEnd.isBefore(end)) {
-            Log.d(TAG, "Adding trailing empty blocks to fill out the interval.");
+            //Log.d(TAG, "Adding trailing empty blocks to fill out the interval.");
             blocks.addAll(EmptyInterval.makeEmptyBlocks(start, prevFragmentEnd, end, spacing));
         }
 
