@@ -3,4 +3,5 @@
     android:layout_height="wrap_content"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/listView"
-    tools:listitem="@layout/hour"></ListView>
+    tools:listitem="@layout/hour"
+    android:dividerHeight="2dp"></ListView>

@@ -142,10 +142,10 @@ public class HourAdapter extends ArrayAdapter<Hour> {
             
             button.setTag(R.id.display_block_key, block);
 
-            if (isSecondHalf) {
-                button.setAlpha((float) 0.50);
-            } else if (block.getEnd().isAfter(now)) {
+            if (block.getEnd().isAfter(now)) {
                 button.setAlpha((float) 0.25);
+            } else if (isSecondHalf) {
+                button.setAlpha((float) 0.50);
             } else {
                 button.setAlpha(1);
             }
