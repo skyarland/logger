@@ -222,6 +222,7 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
                 DateTime minStart = end.minus(MAX_SCROLL_WINDOW_SIZE);
                 if (minStart.isAfter(start)) {
                     start = minStart;
+                    listViewPosition -= DEFAULT_HOURS_TO_LOAD;
                 }
             }
 
