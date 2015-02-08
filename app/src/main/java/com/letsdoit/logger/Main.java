@@ -39,11 +39,10 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
     public static final String START_BLOCK = "StartBlock";
     public static final String END_BLOCK = "EndBlock";
 
-
     private static final String TAG = "ADP_Main";
     private static final int LOADER_ID = 1;
     private static int DEFAULT_HOURS_TO_LOAD = 8;
-    private static final Duration MAX_SCROLL_WINDOW_SIZE = days(7).toStandardDuration();
+    private static final Duration MAX_SCROLL_WINDOW_SIZE = days(2).toStandardDuration();
 
     private static final Gson GSON = Converters.registerDateTime(new GsonBuilder()).create();
 
@@ -52,13 +51,15 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
     private DateTime start;
     private DateTime end;
 
+    private boolean loadedAtStart;
+    private boolean loadedAtEnd;
+
     private ListView listView;
     private HourAdapter adapter;
-    private int listViewPosition = DEFAULT_HOURS_TO_LOAD - 3;
-    private int pixelsFromTop = 0;
 
     private View cachedStartBlock = null;
     private ActivityInterval cachedStartInterval = null;
+    private boolean isMaxWindowSize = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,8 +101,30 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
     public void onLoadFinished(Loader<List<ActivityFragment>> loader, List<ActivityFragment> data) {
         CompletedActivityFragmentLoader fragmentLoader = (CompletedActivityFragmentLoader) loader;
 
-        this.adapter.setData(data, start, end);
-        this.listView.setSelectionFromTop(listViewPosition, pixelsFromTop);
+        adapter.setData(data, start, end);
+        adapter.notifyDataSetChanged();
+
+        int listViewPosition = DEFAULT_HOURS_TO_LOAD - 3;
+        int pixelsFromTop = 0;
+
+        if (listView.getSelectedView() != null) {
+            listViewPosition = listView.getSelectedItemPosition();
+            pixelsFromTop = listView.getSelectedView().getTop();
+        }
+
+        if (loadedAtStart) {
+            listViewPosition += DEFAULT_HOURS_TO_LOAD - 1;
+        } else if (loadedAtEnd) {
+            listViewPosition -= DEFAULT_HOURS_TO_LOAD;
+            if (isMaxWindowSize) {
+                listViewPosition -= DEFAULT_HOURS_TO_LOAD;
+            }
+        }
+
+        listView.setSelectionFromTop(listViewPosition, pixelsFromTop);
+
+        loadedAtStart = false;
+        loadedAtEnd = false;
 
         Log.d(TAG, "onLoadFinished completed");
     }
@@ -109,7 +132,7 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
     @Override
     protected void onResume() {
         super.onResume();
-        getLoaderManager().initLoader(LOADER_ID, null, this);
+        getLoaderManager().getLoader(LOADER_ID).forceLoad();
     }
 
     @Override
@@ -195,11 +218,15 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
 
     @Override
     public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+
+        if (totalItemCount < DEFAULT_HOURS_TO_LOAD || loadedAtEnd || loadedAtStart) {
+            return;
+        }
+
         boolean closeToStart = isCloseToStart(firstVisibleItem);
         boolean closeToEnd = isCloseToEnd(firstVisibleItem, visibleItemCount, totalItemCount);
+
         if (closeToStart || closeToEnd) {
-            listViewPosition = firstVisibleItem;
-            pixelsFromTop = view == null ? 0 : view.getTop();
 
             CompletedActivityFragmentLoader loader = (CompletedActivityFragmentLoader)
                     getLoaderManager().<List<ActivityFragment>>getLoader(LOADER_ID);
@@ -213,8 +240,9 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
                 DateTime maxEnd = start.plus(MAX_SCROLL_WINDOW_SIZE);
                 if (maxEnd.isBefore(end)) {
                     end = maxEnd;
+                    isMaxWindowSize = true;
                 }
-                listViewPosition += DEFAULT_HOURS_TO_LOAD;
+                loadedAtStart = true;
             }
 
             if (closeToEnd) {
@@ -222,8 +250,9 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
                 DateTime minStart = end.minus(MAX_SCROLL_WINDOW_SIZE);
                 if (minStart.isAfter(start)) {
                     start = minStart;
-                    listViewPosition -= DEFAULT_HOURS_TO_LOAD;
+                    isMaxWindowSize = true;
                 }
+                loadedAtEnd = true;
             }
 
             Log.d(TAG, "Setting loader start and end ");
