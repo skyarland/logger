@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AbsListView;
 import android.widget.ListView;
 
 import com.fatboyindustrial.gsonjodatime.Converters;
@@ -23,24 +24,38 @@ import com.letsdoit.logger.view.HourAdapter;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.Duration;
 import org.joda.time.Period;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.TimeZone;
 
+import static org.joda.time.Period.days;
+import static org.joda.time.Period.hours;
 
-public class Main extends Activity implements LoaderManager.LoaderCallbacks<List<ActivityFragment>> {
+
+public class Main extends Activity implements LoaderManager.LoaderCallbacks<List<ActivityFragment>>, AbsListView.OnScrollListener {
     public static final String START_BLOCK = "StartBlock";
     public static final String END_BLOCK = "EndBlock";
 
+
     private static final String TAG = "ADP_Main";
     private static final int LOADER_ID = 1;
+    private static int DEFAULT_HOURS_TO_LOAD = 8;
+    private static final Duration MAX_SCROLL_WINDOW_SIZE = days(7).toStandardDuration();
 
     private static final Gson GSON = Converters.registerDateTime(new GsonBuilder()).create();
 
     private CompletedActivityFragmentsDAO dao;
+
+    private DateTime start;
+    private DateTime end;
+
+    private ListView listView;
     private HourAdapter adapter;
+    private int listViewPosition = DEFAULT_HOURS_TO_LOAD - 3;
+    private int pixelsFromTop = 0;
 
     private View cachedStartBlock = null;
     private ActivityInterval cachedStartInterval = null;
@@ -55,18 +70,46 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
         this.dao = new CompletedActivityFragmentsDAO(this);
         this.adapter = new HourAdapter(this);
 
-        ListView listView = (ListView) findViewById(R.id.listView);
+        listView = (ListView) findViewById(R.id.listView);
         listView.setAdapter(this.adapter);
-        
+        listView.setOnScrollListener(this);
+
+        DateTime now = DateTime.now();
+        start = now.minus(hours(DEFAULT_HOURS_TO_LOAD));
+        end = now.plus(hours(DEFAULT_HOURS_TO_LOAD));
+
         getLoaderManager().initLoader(LOADER_ID, null, this);
-        
+
         Log.d(TAG, "onCreate completed");
+    }
+
+    @Override
+    public Loader<List<ActivityFragment>> onCreateLoader(int id, Bundle args) {
+        Log.d(TAG, "creating loader");
+
+        CompletedActivityFragmentLoader loader = new CompletedActivityFragmentLoader(this, dao);
+
+        loader.setStart(start);
+        loader.setEnd(end);
+
+        return loader;
+    }
+
+    // Update the adapter with the loaded data
+    @Override
+    public void onLoadFinished(Loader<List<ActivityFragment>> loader, List<ActivityFragment> data) {
+        CompletedActivityFragmentLoader fragmentLoader = (CompletedActivityFragmentLoader) loader;
+
+        this.adapter.setData(data, start, end);
+        this.listView.setSelectionFromTop(listViewPosition, pixelsFromTop);
+
+        Log.d(TAG, "onLoadFinished completed");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        getLoaderManager().restartLoader(LOADER_ID, null, this);
+        getLoaderManager().initLoader(LOADER_ID, null, this);
     }
 
     @Override
@@ -135,25 +178,6 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
         }
     }
 
-    @Override
-    public Loader<List<ActivityFragment>> onCreateLoader(int id, Bundle args) {
-        Log.d(TAG, "creating loader");
-        return new CompletedActivityFragmentLoader(this, dao);
-    }
-
-    // Update the adapter with the loaded data
-    @Override
-    public void onLoadFinished(Loader<List<ActivityFragment>> loader, List<ActivityFragment> data) {
-        CompletedActivityFragmentLoader fragmentLoader = (CompletedActivityFragmentLoader) loader;
-
-        DateTime earliestTime = fragmentLoader.getStart();
-        DateTime latestTime = fragmentLoader.getEnd().plus(Period.hours(8));
-
-        this.adapter.setData(data, earliestTime, latestTime);
-
-        Log.d(TAG, "onLoadFinished completed");
-    }
-
     // Clear out the loader
     @Override
     public void onLoaderReset(Loader<List<ActivityFragment>> loader) {
@@ -162,5 +186,61 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
         adapter.setData(empty, now, now);
         adapter.notifyDataSetChanged();
         Log.d(TAG, "onLoaderReset completed");
+    }
+
+    @Override
+    public void onScrollStateChanged(AbsListView view, int scrollState) {
+
+    }
+
+    @Override
+    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+        boolean closeToStart = isCloseToStart(firstVisibleItem);
+        boolean closeToEnd = isCloseToEnd(firstVisibleItem, visibleItemCount, totalItemCount);
+        if (closeToStart || closeToEnd) {
+            listViewPosition = firstVisibleItem;
+            pixelsFromTop = view == null ? 0 : view.getTop();
+
+            CompletedActivityFragmentLoader loader = (CompletedActivityFragmentLoader)
+                    getLoaderManager().<List<ActivityFragment>>getLoader(LOADER_ID);
+
+            if (loader == null) {
+                return;
+            }
+
+            if (closeToStart) {
+                start = start.minus(hours(DEFAULT_HOURS_TO_LOAD));
+                DateTime maxEnd = start.plus(MAX_SCROLL_WINDOW_SIZE);
+                if (maxEnd.isBefore(end)) {
+                    end = maxEnd;
+                }
+                listViewPosition += DEFAULT_HOURS_TO_LOAD;
+            }
+
+            if (closeToEnd) {
+                end = end.plus(hours(DEFAULT_HOURS_TO_LOAD));
+                DateTime minStart = end.minus(MAX_SCROLL_WINDOW_SIZE);
+                if (minStart.isAfter(start)) {
+                    start = minStart;
+                }
+            }
+
+            Log.d(TAG, "Setting loader start and end ");
+            Log.d(TAG, "start: " + start);
+            Log.d(TAG, "end:   " + end);
+
+            loader.setStart(start);
+            loader.setEnd(end);
+
+            getLoaderManager().getLoader(LOADER_ID).forceLoad();
+        }
+    }
+
+    private boolean isCloseToEnd(int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+        return firstVisibleItem + visibleItemCount > totalItemCount - 4;
+    }
+
+    private boolean isCloseToStart(int firstVisibleItem) {
+        return firstVisibleItem < 4;
     }
 }

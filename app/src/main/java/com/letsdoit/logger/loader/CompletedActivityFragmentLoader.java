@@ -41,7 +41,7 @@ public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activi
         this.dao = dao;
 
         // Load activities for the past 8 hours by default
-        this.end = new DateTime();
+        this.end = DateTime.now();
         this.start = end.minus(hours(8));
     }
 
