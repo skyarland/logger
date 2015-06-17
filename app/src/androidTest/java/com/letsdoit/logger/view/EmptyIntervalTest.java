@@ -29,7 +29,8 @@ public class EmptyIntervalTest extends AndroidTestCase {
      * |*[--]---|
      */
     public void testPeriodSmallerThanSpacing() {
-        List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(2)), minutes(5));
+        List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(2)),
+                minutes(5).toStandardDuration());
 
         assertEquals(1, blocks.size());
 
@@ -42,7 +43,7 @@ public class EmptyIntervalTest extends AndroidTestCase {
      */
     public void testReferenceDifferentFromStart() {
         List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time.plus(minutes(2)), time.plus(minutes(4)),
-                minutes(5));
+                minutes(5).toStandardDuration());
 
         assertEquals(1, blocks.size());
 
@@ -54,7 +55,8 @@ public class EmptyIntervalTest extends AndroidTestCase {
      * |*[-----]|
      */
     public void testPeriodExactlyEqualToSpacing() {
-        List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(5)), minutes(5));
+        List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(5)),
+                minutes(5).toStandardDuration());
 
         assertEquals(1, blocks.size());
 
@@ -66,7 +68,7 @@ public class EmptyIntervalTest extends AndroidTestCase {
      * |*[-----]|[--]---|
      */
     public void testPeriodSlightlyLargerThanSpacing() {
-        List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(7)), minutes(5));
+        List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(7)), minutes(5).toStandardDuration());
 
         assertEquals(2, blocks.size());
 
@@ -83,7 +85,7 @@ public class EmptyIntervalTest extends AndroidTestCase {
     public void testPeriodSplitRelativeToReference() {
 
         List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time.minus(minutes(6)), time, time.plus(minutes(5)),
-                minutes(5));
+                minutes(5).toStandardDuration());
 
         assertEquals(2, blocks.size());
 
@@ -99,7 +101,7 @@ public class EmptyIntervalTest extends AndroidTestCase {
      */
     public void testPeriodSplitRelativeToReference2() {
         List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time.plus(minutes(6)), time.plus(minutes(11)),
-                minutes(5));
+                minutes(5).toStandardDuration());
 
         assertEquals(2, blocks.size());
 
@@ -115,7 +117,8 @@ public class EmptyIntervalTest extends AndroidTestCase {
      * |*[-----]|[-----]|
      */
     public void testPeriodIsMultipleOfSpacing() {
-        List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(10)), minutes(5));
+        List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(10)),
+                minutes(5).toStandardDuration());
 
         assertEquals(2, blocks.size());
 
@@ -130,7 +133,8 @@ public class EmptyIntervalTest extends AndroidTestCase {
      * |*[-----]|[-----]|[--]---|
      */
     public void testPeriodWithSpacingsAndRemainder() {
-        List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(12)), minutes(5));
+        List<ActivityInterval> blocks = EmptyInterval.makeEmptyBlocks(time, time, time.plus(minutes(12)),
+                minutes(5).toStandardDuration());
 
         assertEquals(3, blocks.size());
 

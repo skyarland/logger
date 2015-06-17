@@ -33,12 +33,12 @@ public class ActivityFragmentTest extends AndroidTestCase {
         assertEquals("" + intervals, 2, intervals.size());
 
         assertEquals(1, intervals.get(0).getFragments().size());
-        assertEquals(start, intervals.get(0).getFragments().get(0).getStart());
-        assertEquals(start.plus(minutes(30)), intervals.get(0).getFragments().get(0).getEnd());
+        assertEquals(start, intervals.get(0).getFragments().get(0).getFragmentStart());
+        assertEquals(start.plus(minutes(30)), intervals.get(0).getFragments().get(0).getFragmentEnd());
 
         assertEquals(1, intervals.get(1).getFragments().size());
-        assertEquals(start.plus(minutes(30)), intervals.get(1).getFragments().get(0).getStart());
-        assertEquals(start.plus(hours(1)), intervals.get(1).getFragments().get(0).getEnd());
+        assertEquals(start.plus(minutes(30)), intervals.get(1).getFragments().get(0).getFragmentStart());
+        assertEquals(start.plus(hours(1)), intervals.get(1).getFragments().get(0).getFragmentEnd());
 
     }
 
@@ -55,12 +55,12 @@ public class ActivityFragmentTest extends AndroidTestCase {
         assertEquals(0, intervals.get(1).getFragments().size());
 
         assertEquals(1, intervals.get(2).getFragments().size());
-        assertEquals(start.plus(minutes(5)), intervals.get(2).getFragments().get(0).getStart());
-        assertEquals(start.plus(minutes(30)), intervals.get(2).getFragments().get(0).getEnd());
+        assertEquals(start.plus(minutes(5)), intervals.get(2).getFragments().get(0).getFragmentStart());
+        assertEquals(start.plus(minutes(30)), intervals.get(2).getFragments().get(0).getFragmentEnd());
 
         assertEquals(1, intervals.get(3).getFragments().size());
-        assertEquals(start.plus(minutes(30)), intervals.get(3).getFragments().get(0).getStart());
-        assertEquals(start.plus(minutes(40)), intervals.get(3).getFragments().get(0).getEnd());
+        assertEquals(start.plus(minutes(30)), intervals.get(3).getFragments().get(0).getFragmentStart());
+        assertEquals(start.plus(minutes(40)), intervals.get(3).getFragments().get(0).getFragmentEnd());
 
         assertEquals(0, intervals.get(4).getFragments().size());
         assertEquals(0, intervals.get(5).getFragments().size());
@@ -87,8 +87,8 @@ public class ActivityFragmentTest extends AndroidTestCase {
         assertTrue(activity.getActivityName().equals(output.getActivityName()));
         assertTrue(activity.getActivityStart().equals(output.getActivityStart()));
         assertTrue(activity.getActivityEnd().equals(output.getActivityEnd()));
-        assertTrue(activity.getStart().equals(output.getStart()));
-        assertTrue(activity.getEnd().equals(output.getEnd()));
+        assertTrue(activity.getFragmentStart().equals(output.getFragmentStart()));
+        assertTrue(activity.getFragmentEnd().equals(output.getFragmentEnd()));
     }
 
     public void testDefragmentTripple() {
@@ -105,7 +105,7 @@ public class ActivityFragmentTest extends AndroidTestCase {
         assertTrue(activity.getActivityName().equals(output.getActivityName()));
         assertTrue(activity.getActivityStart().equals(output.getActivityStart()));
         assertTrue(activity.getActivityEnd().equals(output.getActivityEnd()));
-        assertTrue(activity.getStart().equals(output.getStart()));
-        assertTrue(activity.getEnd().equals(output.getEnd()));
+        assertTrue(activity.getFragmentStart().equals(output.getFragmentStart()));
+        assertTrue(activity.getFragmentEnd().equals(output.getFragmentEnd()));
     }
 }

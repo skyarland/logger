@@ -16,21 +16,15 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * An activity can be of any duration.  This causes challenges when it comes to answering "what activites were
- * happening during this hour."  Some examples:
+ * Represents a sub-chunk of time of an Activity.
  *
- * (a) Activity started at 7am and ended at 9am.  You want to display the activities that happened at 8am.
- * (b) Activity started at 7am two days ago and ended at 9am a week from now.  You want to display the activities that
- * happened at 8am today.
+ * Contains all of the information of an Activity along with the specific time range this
+ * ActivityFragment is covering.
  *
- * Do you query for 2 hours around the target hour (would work for (a)?  2 weeks (would work for (b),
- * but seems like overkill)?
- *
- * By splitting the activities into MAX_FRAGMENT_DURATION fragments, we know that we only need to look at
- *
- * (INSTANT - MAX_FRAGMENT_DURATION) to (INSTANT + MAX_FRAGMENT_DURATION)
- *
- * The fragments know everything about the activity to which they refer.
+ * Since Activities can be an arbitrary duration, they can easily fall outside of any
+ * specific time window.  By chopping them up into smaller pieces, we can make sure that
+ * each of the pieces is bounded in size.  By duplicating the Activity data, we can
+ * reconstruct the entire activity from just one fragment, even it if is larger.
  *
  * Created by Andrey on 7/12/2014.
  */
@@ -42,32 +36,30 @@ public class ActivityFragment {
     private final DateTime activityStart;
     private final DateTime activityEnd;
 
-    private final DateTime start;
-    private final DateTime end;
+    private final DateTime fragmentStart;
+    private final DateTime fragmentEnd;
 
-    public ActivityFragment(String activityName, DateTime activityStart, DateTime activityEnd, DateTime start,
-                            DateTime end) {
+    public ActivityFragment(
+            String activityName,
+            DateTime activityStart, DateTime activityEnd,
+            DateTime fragmentStart, DateTime fragmentEnd) {
         Preconditions.checkArgument(!StringUtils.isEmpty(activityName), "Activity name cannot be empty.");
 
         Preconditions.checkArgument(activityStart.isBefore(activityEnd),
                 "Activity start date must be before the end date.");
 
-        Preconditions.checkArgument(start.isBefore(end),
+        Preconditions.checkArgument(fragmentStart.isBefore(fragmentEnd),
                 "Fragment start date must be before fragment end date.");
 
-        Preconditions.checkArgument(!activityStart.isAfter(start),
+        Preconditions.checkArgument(!activityStart.isAfter(fragmentStart),
                 "Fragment start date cannot be earlier than activity start date.");
-        Preconditions.checkArgument(!activityEnd.isBefore(end),
+        Preconditions.checkArgument(!activityEnd.isBefore(fragmentEnd),
                 "Fragment end date cannot be later than activity end date.");
-
-//        Preconditions.checkArgument(false == new Duration(start,
-//                end).isLongerThan(MAX_FRAGMENT_DURATION), "Fragment cannot be longer than " +
-//                MAX_FRAGMENT_DURATION);
 
         this.activityStart = activityStart;
         this.activityEnd = activityEnd;
-        this.start = start;
-        this.end = end;
+        this.fragmentStart = fragmentStart;
+        this.fragmentEnd = fragmentEnd;
         this.activityName = activityName;
     }
 
@@ -76,33 +68,41 @@ public class ActivityFragment {
     }
 
     public Pair<ActivityFragment, ActivityFragment> splitAtTime(DateTime splitTime) {
-        Preconditions.checkArgument(splitTime.isAfter(start), "The split time has to be after the fragment " +
+        Preconditions.checkArgument(splitTime.isAfter(fragmentStart), "The split time has to be after the fragment " +
                 "start time");
-        Preconditions.checkArgument(splitTime.isBefore(end), "The split time has to be before the fragment " +
+        Preconditions.checkArgument(splitTime.isBefore(fragmentEnd), "The split time has to be before the fragment " +
                 "end time");
 
-        ActivityFragment first = new ActivityFragment(activityName, activityStart, activityEnd, start,
+        ActivityFragment first = new ActivityFragment(activityName, activityStart, activityEnd, fragmentStart,
                 splitTime);
         ActivityFragment second = new ActivityFragment(activityName, activityStart, activityEnd, splitTime,
-                end);
+                fragmentEnd);
 
         return new Pair<ActivityFragment, ActivityFragment>(first, second);
     }
 
-    public static List<ActivityInterval> partition(DateTime startTime, DateTime endTime, Period interval,
-                                                         List<ActivityFragment> fragments) {
+    public static List<ActivityInterval> partition(
+            DateTime startTime, DateTime endTime,
+            Period interval,
+            List<ActivityFragment> fragments) {
 
         Preconditions.checkArgument(!startTime.isAfter(endTime), "The partition start time must not be after the " +
                 "partition end time");
 
         if (!fragments.isEmpty()) {
             ActivityFragment first = fragments.get(0);
-            Preconditions.checkArgument(!first.getStart().isBefore(startTime),
-                    "The first fragment cannot start before the partitioning period");
+            Preconditions.checkArgument(!first.getFragmentStart().isBefore(startTime),
+                    String.format("The first fragment cannot start before the partitioning period\n" +
+                            "Start time: %s\n" +
+                            "First fragment: %s",
+                            startTime, first));
 
             ActivityFragment last = fragments.get(fragments.size() - 1);
-            Preconditions.checkArgument(!last.getEnd().isAfter(endTime),
-                    "The last fragment cannot end after the partitioning period");
+            Preconditions.checkArgument(!last.getFragmentEnd().isAfter(endTime),
+                    String.format("The last fragment cannot end after the partitioning period.\n" +
+                            "End time: %s\n" +
+                            "Last fragment: %s",
+                            endTime, last));
         }
 
         List<ActivityInterval> intervals = Lists.newArrayList();
@@ -114,8 +114,8 @@ public class ActivityFragment {
             DateTime endOfInterval = startOfInterval.plus(interval);
             List<ActivityFragment> intervalFragments = Lists.newArrayList();
 
-            while (fragment != null && fragment.getStart().isBefore(endOfInterval)) {
-                if (fragment.getEnd().isAfter(endOfInterval)) {
+            while (fragment != null && fragment.getFragmentStart().isBefore(endOfInterval)) {
+                if (fragment.getFragmentEnd().isAfter(endOfInterval)) {
                     // Split fragments that cross the hour
                     Pair<ActivityFragment, ActivityFragment> split = fragment.splitAtTime(endOfInterval);
                     intervalFragments.add(split.first);
@@ -149,12 +149,12 @@ public class ActivityFragment {
         Preconditions.checkArgument(first.activityEnd.equals(second.activityEnd),
                 "Merged activities need to have the same activity end time.  First=" + first + " Second=" + second);
 
-        Preconditions.checkArgument(!first.end.isAfter(second.start),
+        Preconditions.checkArgument(!first.fragmentEnd.isAfter(second.fragmentStart),
                 "The first activity cannot end after the second activity starts when merging.  First=" + first +
                         " Second=" + second);
 
         return new ActivityFragment(first.getActivityName(), first.getActivityStart(), first.getActivityEnd(),
-                first.getStart(), second.getEnd());
+                first.getFragmentStart(), second.getFragmentEnd());
     }
 
     /**
@@ -169,8 +169,8 @@ public class ActivityFragment {
 
         DateTime splitTime;
         ActivityFragment rest = activity;
-        for (splitTime = activity.getStart().plus(maxFragmentDuration);
-             splitTime.isBefore(activity.getEnd());
+        for (splitTime = activity.getFragmentStart().plus(maxFragmentDuration);
+             splitTime.isBefore(activity.getFragmentEnd());
              splitTime = splitTime.plus(maxFragmentDuration)) {
             Pair<ActivityFragment, ActivityFragment> firstRest = rest.splitAtTime(splitTime);
             fragments.add(firstRest.first);
@@ -246,12 +246,12 @@ public class ActivityFragment {
         return activityEnd;
     }
 
-    public DateTime getStart() {
-        return start;
+    public DateTime getFragmentStart() {
+        return fragmentStart;
     }
 
-    public DateTime getEnd() {
-        return end;
+    public DateTime getFragmentEnd() {
+        return fragmentEnd;
     }
 
     public boolean isSameActivityAs(ActivityFragment other) {
@@ -260,7 +260,7 @@ public class ActivityFragment {
     }
 
     public Duration getDuration() {
-        return new Duration(start, end);
+        return new Duration(fragmentStart, fragmentEnd);
     }
 
     public Duration getActivityDuration() {
@@ -273,21 +273,21 @@ public class ActivityFragment {
                 "activityName='" + activityName + '\'' +
                 ", activityStart=" + activityStart +
                 ", activityEnd=" + activityEnd +
-                ", start=" + start +
-                ", end=" + end +
+                ", start=" + fragmentStart +
+                ", end=" + fragmentEnd +
                 '}';
     }
 
     public ActivityFragment clipEnd(DateTime end) {
-        if (this.end.isAfter(end)) {
-            return new ActivityFragment(activityName, activityStart, activityEnd, start, end);
+        if (this.fragmentEnd.isAfter(end)) {
+            return new ActivityFragment(activityName, activityStart, activityEnd, fragmentStart, end);
         }
         return this;
     }
 
     public ActivityFragment clipStart(DateTime start) {
-        if (this.start.isBefore(start)) {
-            return new ActivityFragment(activityName, activityStart, activityEnd, start, end);
+        if (this.fragmentStart.isBefore(start)) {
+            return new ActivityFragment(activityName, activityStart, activityEnd, start, fragmentEnd);
         }
         return this;
     }

@@ -51,7 +51,7 @@ public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activi
 
     /**
      * This method is called on a background thread and generates a List of
-     * {@link ActivityFragment} objects. Each entry corresponds to a single installed
+     * {@link com.letsdoit.logger.data.dao.ActivityFragment} objects. Each entry corresponds to a single installed
      * application on the device.
      */
     @Override

@@ -6,11 +6,6 @@ import android.util.Log;
 
 import com.letsdoit.logger.data.dao.ActivityFragment;
 
-import org.joda.time.DateTime;
-
-import static org.joda.time.Period.hours;
-import static org.joda.time.Period.minutes;
-
 /**
  * Created by Andrey on 7/20/2014.
  */
@@ -24,11 +19,11 @@ public class CompletedActivityTable {
     public static final String COLUMN_ACTIVITY_NAME = "activityName";
     public static final String COLUMN_ACTIVITY_START = "activityStart";
     public static final String COLUMN_ACTIVITY_END = "activityEnd";
-    public static final String COLUMN_START = "start";
-    public static final String COLUMN_END = "end";
+    public static final String COLUMN_FRAGMENT_START = "fragmentStart";
+    public static final String COLUMN_FRAGMENT_END = "fragmentEnd";
 
     public static final String[] ALL_COLUMNS = {COLUMN_ID, COLUMN_ACTIVITY_NAME, COLUMN_ACTIVITY_START,
-            COLUMN_ACTIVITY_END, COLUMN_START, COLUMN_END};
+            COLUMN_ACTIVITY_END, COLUMN_FRAGMENT_START, COLUMN_FRAGMENT_END};
 
     // Index of the column in ALL_COLUMNS, used to query from cursors
     public static final int COLUMN_INDEX_ID = 0;
@@ -44,12 +39,12 @@ public class CompletedActivityTable {
             + COLUMN_ACTIVITY_NAME + " text not null, "
             + COLUMN_ACTIVITY_START + " integer not null, "
             + COLUMN_ACTIVITY_END + " integer not null, "
-            + COLUMN_START + " integer not null, "
-            + COLUMN_END + " integer not null"
+            + COLUMN_FRAGMENT_START + " integer not null, "
+            + COLUMN_FRAGMENT_END + " integer not null"
             + ");";
 
     private static final String SQL_CREATE_INDEX = "create index " + TABLE_INDEX_NAME
-            + " on " + TABLE_NAME + "(" + COLUMN_START + ")";
+            + " on " + TABLE_NAME + "(" + COLUMN_FRAGMENT_START + ")";
 
     public static void createTable(SQLiteDatabase database) {
         database.execSQL(SQL_CREATE_TABLE);
@@ -57,7 +52,7 @@ public class CompletedActivityTable {
     }
 
     public static final String QUERY_FRAGMENT_ON_START_TIME =
-            String.format("%s >= ? and %s < ? ", COLUMN_START, COLUMN_START);
+            String.format("%s >= ? and %s < ? ", COLUMN_FRAGMENT_START, COLUMN_FRAGMENT_START);
 
     // TODO: Delete this once the database starts really being used
     private static void add(SQLiteDatabase database, ActivityFragment fragment) {
@@ -65,8 +60,8 @@ public class CompletedActivityTable {
         values.put(CompletedActivityTable.COLUMN_ACTIVITY_NAME, fragment.getActivityName());
         values.put(CompletedActivityTable.COLUMN_ACTIVITY_START, fragment.getActivityStart().getMillis());
         values.put(CompletedActivityTable.COLUMN_ACTIVITY_END, fragment.getActivityEnd().getMillis());
-        values.put(CompletedActivityTable.COLUMN_START, fragment.getStart().getMillis());
-        values.put(CompletedActivityTable.COLUMN_END, fragment.getEnd().getMillis());
+        values.put(CompletedActivityTable.COLUMN_FRAGMENT_START, fragment.getFragmentStart().getMillis());
+        values.put(CompletedActivityTable.COLUMN_FRAGMENT_END, fragment.getFragmentEnd().getMillis());
 
         database.insert(CompletedActivityTable.TABLE_NAME, null, values);
     }

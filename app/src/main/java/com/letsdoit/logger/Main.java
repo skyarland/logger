@@ -25,7 +25,6 @@ import com.letsdoit.logger.view.HourAdapter;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Duration;
-import org.joda.time.Period;
 
 import java.util.Collections;
 import java.util.List;

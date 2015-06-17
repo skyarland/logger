@@ -9,7 +9,6 @@ import com.letsdoit.logger.data.dao.ActivityInterval;
 
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
-import org.joda.time.Period;
 
 import java.util.Iterator;
 import java.util.List;
@@ -54,11 +53,11 @@ public class DisplayBlock {
     }
 
     public DateTime getStart() {
-        return hasActivityFragment ? activityFragment.getStart() : emptyInterval.getStart();
+        return hasActivityFragment ? activityFragment.getFragmentStart() : emptyInterval.getStart();
     }
 
     public DateTime getEnd() {
-        return hasActivityFragment ? activityFragment.getEnd() : emptyInterval.getEnd();
+        return hasActivityFragment ? activityFragment.getFragmentEnd() : emptyInterval.getEnd();
     }
 
     @Override
@@ -83,26 +82,26 @@ public class DisplayBlock {
 
         for (ActivityFragment fragment : fragments) {
             //Log.d(TAG, "Fragment=[" + fragment + "]");
-            if (fragment.getEnd().isBefore(start)) {
+            if (fragment.getFragmentEnd().isBefore(start)) {
                 // Skip it, it's not in the specified period
                 Log.d(TAG, "Fragment ends before the start of the interval.  Continuing.");
                 continue;
-            } else if (fragment.getStart().isAfter(end)) {
+            } else if (fragment.getFragmentStart().isAfter(end)) {
                 // We're past the specified period
                 //Log.d(TAG, "Fragment starts after the end of the interval.  Breaking.");
                 break;
-            } else if (fragment.getStart().isBefore(start)) {
+            } else if (fragment.getFragmentStart().isBefore(start)) {
                 // Clip the start
                 //Log.d(TAG, "Fragment starts before the interval, but ends inside it.  Clipping start and Adding.");
                 blocks.add(ActivityInterval.fromFragment(fragment.clip(start, end)));
-            } else if (prevFragmentEnd.isBefore(fragment.getStart())) {
+            } else if (prevFragmentEnd.isBefore(fragment.getFragmentStart())) {
                 // There is empty space between the previous fragment and the current one
                 // Fill it with empty blocks
                 //Log.d(TAG, "There is space between the last fragment and the current one.  Adding empty space and " +
                 //        "adding the new Fragment afterwards.");
-                blocks.addAll(EmptyInterval.makeEmptyBlocks(start, prevFragmentEnd, fragment.getStart(), spacing));
+                blocks.addAll(EmptyInterval.makeEmptyBlocks(start, prevFragmentEnd, fragment.getFragmentStart(), spacing));
                 blocks.add(ActivityInterval.fromFragment(fragment.clipEnd(end)));
-            } else if (prevFragmentEnd.equals(fragment.getStart())) {
+            } else if (prevFragmentEnd.equals(fragment.getFragmentStart())) {
                 // This fragment starts right after the previous fragment
                 // Render it
                 //Log.d(TAG, "Fragment is inside the interval and right after the previous fragment.  Adding.");
@@ -112,7 +111,7 @@ public class DisplayBlock {
                 Log.e(TAG, String.format("Activity fragment %s starts before the previous  fragment ends %s",
                         fragment, prevFragmentEnd));
             }
-            prevFragmentEnd = fragment.getEnd();
+            prevFragmentEnd = fragment.getFragmentEnd();
         }
 
         if (prevFragmentEnd.isBefore(end)) {

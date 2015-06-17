@@ -1,6 +1,5 @@
 package com.letsdoit.logger;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
@@ -12,6 +11,7 @@ import android.widget.TextView;
 import com.fatboyindustrial.gsonjodatime.Converters;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.letsdoit.logger.data.dao.Activity;
 import com.letsdoit.logger.data.dao.ActivityFragment;
 import com.letsdoit.logger.data.dao.ActivityInterval;
 import com.letsdoit.logger.data.sqlite.CompletedActivityFragmentsDAO;
@@ -19,7 +19,7 @@ import com.letsdoit.logger.data.sqlite.CompletedActivityFragmentsDAO;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-public class EnterActivity extends Activity {
+public class EnterActivity extends android.app.Activity {
     private static final Gson GSON = Converters.registerDateTime(new GsonBuilder()).create();
     private static DateTimeFormatter format = DateTimeFormat.forPattern("HH:mm:ss");
 
@@ -69,8 +69,8 @@ public class EnterActivity extends Activity {
         AutoCompleteTextView activityNameView = (AutoCompleteTextView) findViewById(R.id.activityNameEntry);
         String activityName = activityNameView.getText().toString();
         dao.open();
-        ActivityFragment fragment = new ActivityFragment(activityName, start.getStart(), end.getEnd());
-        dao.addCompletedActivity(fragment);
+        Activity activity = new Activity(activityName, start.getStart(), end.getEnd());
+        dao.addCompletedActivity(activity);
         dao.close();
         finish();
     }

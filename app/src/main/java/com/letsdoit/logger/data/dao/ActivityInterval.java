@@ -12,6 +12,9 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
+ * Represents a set of ActivityFragments in a specific time interval.
+ * Used when the interval is too small to be split up (e.g. when rendering).
+ *
  * Created by Andrey on 7/14/2014.
  */
 public class ActivityInterval {
@@ -62,8 +65,8 @@ public class ActivityInterval {
 
     public static ActivityInterval fromFragment(ActivityFragment fragment) {
         return new ActivityInterval(
-                fragment.getStart(),
-                fragment.getEnd(),
+                fragment.getFragmentStart(),
+                fragment.getFragmentEnd(),
                 Lists.<ActivityFragment>newArrayList(fragment));
     }
 
@@ -93,13 +96,13 @@ public class ActivityInterval {
         while (blockTime.isBefore(this.end) && fragmentIter.hasNext()) {
             ActivityFragment fragment = fragmentIter.next();
 
-            if (blockTime.isBefore(fragment.getStart())) {
+            if (blockTime.isBefore(fragment.getFragmentStart())) {
                 buffer.append(format.print(blockTime)).append(" Free Time\n");
             }
 
-            buffer.append(format.print(fragment.getStart()))
+            buffer.append(format.print(fragment.getFragmentStart()))
                     .append(" ").append(fragment.getActivityName()).append("\n");
-            blockTime = fragment.getEnd();
+            blockTime = fragment.getFragmentEnd();
         }
 
         if (blockTime.isBefore(end)) {
