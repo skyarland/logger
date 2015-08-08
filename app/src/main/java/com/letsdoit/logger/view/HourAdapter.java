@@ -16,8 +16,10 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.letsdoit.logger.R;
+import com.letsdoit.logger.data.dao.Activity;
 import com.letsdoit.logger.data.dao.ActivityFragment;
 import com.letsdoit.logger.data.dao.ActivityInterval;
+import com.letsdoit.logger.data.dao.Partitioner;
 
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
@@ -30,6 +32,7 @@ import java.util.List;
  */
 public class HourAdapter extends ArrayAdapter<Hour> {
     private static final String TAG = "ADP_HourAdapter";
+    public static final Duration ACTIVITY_INTERVAL_DURATION = Period.minutes(30).toStandardDuration();
     private static Duration HALF_HOUR = new Duration(30 * 60 * 1000);
     private static Duration FIVE_MINUTES = new Duration(5 * 60 * 1000);
     private static Duration FOUR_MINUTES = new Duration(4 * 60 * 1000);
@@ -163,7 +166,7 @@ public class HourAdapter extends ArrayAdapter<Hour> {
         }
     }
 
-    public void setData(List<ActivityFragment> fragments, DateTime earliestTime, DateTime latestTime) {
+    public void setData(List<Activity> activities, DateTime earliestTime, DateTime latestTime) {
         Log.d(TAG, "setData called");
 
         clear();
@@ -172,7 +175,10 @@ public class HourAdapter extends ArrayAdapter<Hour> {
         Log.d(TAG, "earliestTime=" + earliestTime);
         Log.d(TAG, "latestTime=" + latestTime);
 
-        List<ActivityInterval> halfHours = ActivityFragment.partition(earliestTime, latestTime, Period.minutes(30), fragments);
+        List<ActivityInterval> halfHours = Partitioner.partition(
+                activities,
+                earliestTime, latestTime,
+                ACTIVITY_INTERVAL_DURATION);
 
         ActivityInterval prev = null;
         for (ActivityInterval halfHour : halfHours) {

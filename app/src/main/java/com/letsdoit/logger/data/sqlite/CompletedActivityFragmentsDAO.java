@@ -79,6 +79,7 @@ public class CompletedActivityFragmentsDAO {
         return Fragmenter.defragment(fragments);
     }
 
+    @Deprecated
     public List<ActivityFragment> getInRange(DateTime start, DateTime end) {
         Log.d(TAG, "getInRange called");
 
@@ -112,7 +113,7 @@ public class CompletedActivityFragmentsDAO {
 
         cursor.moveToFirst();
         while (!cursor.isAfterLast()) {
-            ActivityFragment fragment = cursorToComment(cursor);
+            ActivityFragment fragment = cursorToActivityFragment(cursor);
 
             // The above query only guarantees that the startTime is in the interval.
             // Make sure that the end time is also in the interval.
@@ -131,7 +132,7 @@ public class CompletedActivityFragmentsDAO {
         return fragments;
     }
 
-    private ActivityFragment cursorToComment(Cursor cursor) {
+    private ActivityFragment cursorToActivityFragment(Cursor cursor) {
         String activityName = cursor.getString(CompletedActivityTable.COLUMN_INDEX_ACTIVITY_NAME);
         long activityStartMs = cursor.getLong(CompletedActivityTable.COLUMN_INDEX_ACTIVITY_START);
         long activityEndMs = cursor.getLong(CompletedActivityTable.COLUMN_INDEX_ACTIVITY_END);

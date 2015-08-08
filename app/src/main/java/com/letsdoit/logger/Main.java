@@ -1,6 +1,5 @@
 package com.letsdoit.logger;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.LoaderManager;
 import android.content.Intent;
@@ -16,6 +15,7 @@ import android.widget.ListView;
 import com.fatboyindustrial.gsonjodatime.Converters;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.letsdoit.logger.data.dao.Activity;
 import com.letsdoit.logger.data.dao.ActivityFragment;
 import com.letsdoit.logger.data.dao.ActivityInterval;
 import com.letsdoit.logger.data.sqlite.CompletedActivityFragmentsDAO;
@@ -34,7 +34,9 @@ import static org.joda.time.Period.days;
 import static org.joda.time.Period.hours;
 
 
-public class Main extends Activity implements LoaderManager.LoaderCallbacks<List<ActivityFragment>>, AbsListView.OnScrollListener {
+public class Main extends android.app.Activity
+        implements LoaderManager.LoaderCallbacks<List<Activity>>,
+        AbsListView.OnScrollListener {
     public static final String START_BLOCK = "StartBlock";
     public static final String END_BLOCK = "EndBlock";
 
@@ -84,7 +86,7 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
     }
 
     @Override
-    public Loader<List<ActivityFragment>> onCreateLoader(int id, Bundle args) {
+    public Loader<List<Activity>> onCreateLoader(int id, Bundle args) {
         Log.d(TAG, "creating loader");
 
         CompletedActivityFragmentLoader loader = new CompletedActivityFragmentLoader(this, dao);
@@ -97,7 +99,7 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
 
     // Update the adapter with the loaded data
     @Override
-    public void onLoadFinished(Loader<List<ActivityFragment>> loader, List<ActivityFragment> data) {
+    public void onLoadFinished(Loader<List<Activity>> loader, List<Activity> data) {
         CompletedActivityFragmentLoader fragmentLoader = (CompletedActivityFragmentLoader) loader;
 
         adapter.setData(data, start, end);
@@ -172,7 +174,7 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
             }
         } else {
             dao.open();
-            List<ActivityFragment> activitiesInInterval = dao.getInRange(cachedStartInterval.getStart(), block.getEnd());
+            List<Activity> activitiesInInterval = dao.getActivitiesInRange(cachedStartInterval.getStart(), block.getEnd());
             dao.close();
             Log.d(TAG, String.format("Num activities in selection: %s", activitiesInInterval.size()));
 
@@ -202,9 +204,9 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
 
     // Clear out the loader
     @Override
-    public void onLoaderReset(Loader<List<ActivityFragment>> loader) {
+    public void onLoaderReset(Loader<List<Activity>> loader) {
         DateTime now = new DateTime();
-        List<ActivityFragment> empty = Collections.emptyList();
+        List<Activity> empty = Collections.emptyList();
         adapter.setData(empty, now, now);
         adapter.notifyDataSetChanged();
         Log.d(TAG, "onLoaderReset completed");
@@ -228,7 +230,7 @@ public class Main extends Activity implements LoaderManager.LoaderCallbacks<List
         if (closeToStart || closeToEnd) {
 
             CompletedActivityFragmentLoader loader = (CompletedActivityFragmentLoader)
-                    getLoaderManager().<List<ActivityFragment>>getLoader(LOADER_ID);
+                    getLoaderManager().<List<Activity>>getLoader(LOADER_ID);
 
             if (loader == null) {
                 return;

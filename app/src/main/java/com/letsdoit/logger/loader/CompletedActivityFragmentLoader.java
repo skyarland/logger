@@ -5,10 +5,12 @@ import android.content.Context;
 import android.util.Log;
 
 import com.google.common.base.Preconditions;
+import com.letsdoit.logger.data.dao.Activity;
 import com.letsdoit.logger.data.dao.ActivityFragment;
 import com.letsdoit.logger.data.sqlite.CompletedActivityFragmentsDAO;
 
 import org.joda.time.DateTime;
+import org.joda.time.Period;
 
 import java.util.List;
 
@@ -17,10 +19,11 @@ import static org.joda.time.Period.hours;
 /**
  * Created by Andrey on 7/12/2014.
  */
-public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<ActivityFragment>> {
+public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activity>> {
 
     private static final String TAG = "ADP_CompletedActivityFragmentLoader";
     private static final boolean DEBUG = true;
+    public static final Period DEFAULT_DURATION_TO_LOAD = hours(8);
 
     private final CompletedActivityFragmentsDAO dao;
 
@@ -29,10 +32,10 @@ public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activi
     private DateTime end;
 
     // We hold a reference to the Loader's data here.
-    private List<ActivityFragment> fragments;
+    private List<Activity> cachedActivities;
 
     public CompletedActivityFragmentLoader(Context context, CompletedActivityFragmentsDAO dao) {
-        // Loaders may be used across multiple Activitys (assuming they aren't
+        // Loaders may be used across multiple Activities (assuming they aren't
         // bound to the LoaderManager), so NEVER hold a reference to the context
         // directly. Doing so will cause you to leak an entire Activity's context.
         // The superclass constructor will store a reference to the Application
@@ -42,7 +45,7 @@ public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activi
 
         // Load activities for the past 8 hours by default
         this.end = DateTime.now();
-        this.start = end.minus(hours(8));
+        this.start = end.minus(DEFAULT_DURATION_TO_LOAD);
     }
 
     /****************************************************/
@@ -51,22 +54,21 @@ public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activi
 
     /**
      * This method is called on a background thread and generates a List of
-     * {@link com.letsdoit.logger.data.dao.ActivityFragment} objects. Each entry corresponds to a single installed
-     * application on the device.
+     * {@link com.letsdoit.logger.data.dao.Activity} objects.
      */
     @Override
-    public List<ActivityFragment> loadInBackground() {
+    public List<Activity> loadInBackground() {
         Preconditions.checkArgument(start != null, "The start time cannot be null.");
         Preconditions.checkArgument(end != null, "The end time cannot be null.");
 
         Log.i(TAG, "+++ loadInBackground() called! +++");
 
         dao.open();
-        // Retrieve activity fragments in the specified range
-        List<ActivityFragment> fragments = dao.getInRange(start, end);
+        // Retrieve activities in the specified range
+        List<Activity> activities = dao.getActivitiesInRange(start, end);
         dao.close();
 
-        return fragments;
+        return activities;
     }
 
     /*******************************************/
@@ -79,7 +81,7 @@ public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activi
      * forward the results to the client through a call to onLoadFinished.
      */
     @Override
-    public void deliverResult(List<ActivityFragment> fragments) {
+    public void deliverResult(List<Activity> activities) {
         if (isReset()) {
             if (DEBUG) Log.w(TAG, "+++ Warning! An async query came in while the Loader was reset! +++");
             // The Loader has been reset; ignore the result and invalidate the data.
@@ -88,29 +90,29 @@ public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activi
             // finishes its work and attempts to deliver the results to the client,
             // it will see here that the Loader has been reset and discard any
             // resources associated with the new data as necessary.
-            if (fragments != null) {
-                releaseResources(fragments);
+            if (activities != null) {
+                releaseResources(activities);
                 return;
             }
         }
 
         // Hold a reference to the old data so it doesn't get garbage collected.
         // We must protect it until the new data has been delivered.
-        List<ActivityFragment> oldFragments = this.fragments;
-        this.fragments = fragments;
+        List<Activity> oldActivities = this.cachedActivities;
+        this.cachedActivities = activities;
 
         if (isStarted()) {
             if (DEBUG) Log.i(TAG, "+++ Delivering results to the LoaderManager for" +
                     " the ListFragment to display! +++");
             // If the Loader is in a started state, have the superclass deliver the
             // results to the client.
-            super.deliverResult(fragments);
+            super.deliverResult(activities);
         }
 
         // Invalidate the old data as we don't need it any more.
-        if (oldFragments != null && oldFragments != fragments) {
+        if (oldActivities != null && oldActivities != activities) {
             if (DEBUG) Log.i(TAG, "+++ Releasing any old data associated with this Loader. +++");
-            releaseResources(oldFragments);
+            releaseResources(oldActivities);
         }
     }
 
@@ -122,10 +124,10 @@ public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activi
     protected void onStartLoading() {
         if (DEBUG) Log.i(TAG, "+++ onStartLoading() called! +++");
 
-        if (fragments != null) {
+        if (cachedActivities != null) {
             // Deliver any previously loaded data immediately.
             if (DEBUG) Log.i(TAG, "+++ Delivering previously loaded data to the client...");
-            deliverResult(fragments);
+            deliverResult(cachedActivities);
         }
 
         // TODO: Register the observers that will notify the Loader when changes are made.
@@ -137,7 +139,7 @@ public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activi
             // the current data is null), we force a new load.
             if (DEBUG) Log.i(TAG, "+++ A content change has been detected... so force load! +++");
             forceLoad();
-        } else if (fragments == null) {
+        } else if (cachedActivities == null) {
             // If the current data is null... then we should make it non-null! :)
             if (DEBUG) Log.i(TAG, "+++ The current data is data is null... so force load! +++");
             forceLoad();
@@ -165,9 +167,9 @@ public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activi
         onStopLoading();
 
         // At this point we can release the resources associated with 'apps'.
-        if (fragments != null) {
-            releaseResources(fragments);
-            fragments = null;
+        if (cachedActivities != null) {
+            releaseResources(cachedActivities);
+            cachedActivities = null;
         }
 
         // The Loader is being reset, so we should stop monitoring for changes.
@@ -175,15 +177,15 @@ public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activi
     }
 
     @Override
-    public void onCanceled(List<ActivityFragment> fragments) {
+    public void onCanceled(List<Activity> activities) {
         if (DEBUG) Log.i(TAG, "+++ onCanceled() called! +++");
 
         // Attempt to cancel the current asynchronous load.
-        super.onCanceled(fragments);
+        super.onCanceled(activities);
 
         // The load has been canceled, so we should release the resources
         // held in the local fields.
-        releaseResources(fragments);
+        releaseResources(activities);
     }
 
     @Override
@@ -196,7 +198,7 @@ public class CompletedActivityFragmentLoader extends AsyncTaskLoader<List<Activi
      * Helper method to take care of releasing resources associated with an
      * actively loaded data set.
      */
-    private void releaseResources(List<ActivityFragment> apps) {
+    private void releaseResources(List<Activity> activities) {
         // For a simple List, there is nothing to do. For something like a Cursor,
         // we would close it in this method. All resources associated with the
         // Loader should be released here.
