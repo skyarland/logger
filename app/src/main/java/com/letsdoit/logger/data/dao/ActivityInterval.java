@@ -13,7 +13,6 @@ import java.util.List;
 
 /**
  * Represents a set of ActivityFragments in a specific time interval.
- * Used when the interval is too small to be split up (e.g. when rendering).
  *
  * Created by Andrey on 7/14/2014.
  */
@@ -78,6 +77,12 @@ public class ActivityInterval {
         return (double) duration.getMillis() / (double) interval.getMillis();
     }
 
+    /**
+     * @deprecated this class should be immutable.  Was used by the deprecated DisplayBlock.
+     * @param next
+     * @return
+     */
+    @Deprecated
     public ActivityInterval extendWith(ActivityInterval next) {
         Preconditions.checkArgument(end.isEqual(next.getStart()),
                 String.format("Extending interval has to start right after current.  " +

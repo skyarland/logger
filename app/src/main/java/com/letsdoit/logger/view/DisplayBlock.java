@@ -15,8 +15,11 @@ import java.util.List;
 
 
 /**
+ * @deprecated use RenderBlock instead.
+ *
  * Created by Andrey on 7/15/2014.
  */
+@Deprecated
 public class DisplayBlock {
     private static final String TAG = "ADP_DisplayBlock";
 
