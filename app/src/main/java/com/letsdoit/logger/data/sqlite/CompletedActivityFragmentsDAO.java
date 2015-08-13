@@ -20,6 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Provide access to the persistence layer for Activities.  The inputs and outputs are Activities.  Internally,
+ * they get chopped up into ActivityFragments, but this is not part of the public interface and should not be relied on.
+ *
  * Created by Andrey on 7/12/2014.
  */
 public class CompletedActivityFragmentsDAO {
@@ -41,7 +44,95 @@ public class CompletedActivityFragmentsDAO {
         this.dbHelper = new LoggerDatabaseHelper(context);
     }
 
-    public void addCompletedActivity(Activity activity) {
+    /**
+     * Start interacting with the database.  Must be called before any public methods in this class are called.
+     *
+     * @throws SQLException on error opening the database.
+     */
+    public void open() throws SQLException {
+        database = dbHelper.getWritableDatabase();
+    }
+
+    /**
+     * Stop interacting with the database.  Must be called every time you are done with the database.
+     */
+    public void close() {
+        dbHelper.close();
+    }
+
+    /**
+     * Retrieve all of the Activities that started or ended in the specified interval
+     *
+     * @param start - specifies the start of the interval we are interested in
+     * @param end - specifies the end of the interval we are interested in
+     *
+     * @return a list of Activities that started after the start and ended before the end of the interval.
+     */
+    public List<Activity> getActivitiesInRange(DateTime start, DateTime end) {
+        Log.d(TAG, "getActivitesInRange called");
+        List<ActivityFragment> fragments = queryInTimeRange(start, end);
+        return Fragmenter.defragment(fragments);
+    }
+
+    /**
+     * Query the database for the ActivityFragments that started or ended in the specified interval.
+     *
+     * @param start - specifies the start of the interval we are interested in
+     * @param end - specifies the end of the interval we are interested in
+     *
+     * @return all of the ActivityFragments  that either start or end in the specified interval
+     */
+    private List<ActivityFragment> queryInTimeRange(DateTime start, DateTime end) {
+
+        // The table is indexed on the start time, so the query is done relative to the start times.
+        DateTime bufferedStart = start.minus(MAX_FRAGMENT_DURATION);
+        String beginningStartTime = Long.toString(bufferedStart.getMillis());
+        String endingStartTime = Long.toString(end.getMillis());
+
+        String[] selectionArgs = {beginningStartTime, endingStartTime};
+        Cursor cursor = database.query(CompletedActivityTable.TABLE_NAME,
+                CompletedActivityTable.ALL_COLUMNS, CompletedActivityTable.QUERY_FRAGMENT_ON_START_TIME,
+                selectionArgs, null, null, null);
+
+        cursor.moveToFirst();
+        List<ActivityFragment> fragments = Lists.newArrayList();
+        while (!cursor.isAfterLast()) {
+            ActivityFragment fragment = cursorToActivityFragment(cursor);
+            if (fragment.getFragmentEnd().isAfter(start)) {
+                fragments.add(fragment);
+            }
+            cursor.moveToNext();
+        }
+
+        cursor.close();
+        Log.d(TAG, String.format("Loaded %s raw fragments between %s and %s", fragments.size(), bufferedStart, end));
+
+        return fragments;
+    }
+
+    /**
+     * Deserialize the ActivityFragment from the database entry.
+     *
+     * @param cursor the database entry for an ActivityFragment.
+     * @return an ActivityFragment for the database entry.
+     */
+    private ActivityFragment cursorToActivityFragment(Cursor cursor) {
+        String activityName = cursor.getString(CompletedActivityTable.COLUMN_INDEX_ACTIVITY_NAME);
+        long activityStartMs = cursor.getLong(CompletedActivityTable.COLUMN_INDEX_ACTIVITY_START);
+        long activityEndMs = cursor.getLong(CompletedActivityTable.COLUMN_INDEX_ACTIVITY_END);
+        long startMs = cursor.getLong(CompletedActivityTable.COLUMN_INDEX_START);
+        long endMs = cursor.getLong(CompletedActivityTable.COLUMN_INDEX_END);
+
+        return new ActivityFragment(activityName, new DateTime(activityStartMs), new DateTime(activityEndMs),
+                new DateTime(startMs), new DateTime(endMs));
+    }
+
+    /**
+     * Persist the given activity in the database.
+     *
+     * @param activity the activity to be persisted
+     */
+    public void addActivity(Activity activity) {
         // Split into fragments no longer than the max duration and persist
         List<ActivityFragment> fragments = Fragmenter.fragment(activity, MAX_FRAGMENT_DURATION);
         for (ActivityFragment fragment : fragments) {
@@ -63,84 +154,6 @@ public class CompletedActivityFragmentsDAO {
         values.put(CompletedActivityTable.COLUMN_FRAGMENT_END, fragment.getFragmentEnd().getMillis());
 
         database.insert(CompletedActivityTable.TABLE_NAME, null, values);
-    }
-
-    /**
-     * Make sure that the fragment doesn't overlap with any other fragments
-     * @param fragment
-     */
-    public void addWithoutOverlap(ActivityFragment fragment) {
-
-    }
-
-    public List<Activity> getActivitiesInRange(DateTime start, DateTime end) {
-        Log.d(TAG, "getActivitesInRange called");
-        List<ActivityFragment> fragments = queryInTimeRange(start, end);
-        return Fragmenter.defragment(fragments);
-    }
-
-    @Deprecated
-    public List<ActivityFragment> getInRange(DateTime start, DateTime end) {
-        Log.d(TAG, "getInRange called");
-
-        ArrayList<ActivityFragment> fragments = Lists.newArrayList();
-        fragments.addAll(queryInTimeRange(start, end));
-
-        List<ActivityFragment> defragmented = ActivityFragment.defragment(fragments);
-        Log.d(TAG, String.format("Loaded %s fragments (defragmented) between %s and %s",
-                defragmented.size(), start, end));
-        return defragmented;
-    }
-
-    public void open() throws SQLException {
-        database = dbHelper.getWritableDatabase();
-    }
-
-    public void close() {
-        dbHelper.close();
-    }
-
-    public List<ActivityFragment> queryInTimeRange(DateTime start, DateTime end) {
-        List<ActivityFragment> fragments = Lists.newArrayList();
-
-        String beginningStartTime = Long.toString(start.getMillis());
-        String endingStartTime = Long.toString(end.getMillis());
-
-        String[] selectionArgs = {beginningStartTime, endingStartTime};
-        Cursor cursor = database.query(CompletedActivityTable.TABLE_NAME,
-                CompletedActivityTable.ALL_COLUMNS, CompletedActivityTable.QUERY_FRAGMENT_ON_START_TIME,
-                selectionArgs, null, null, null);
-
-        cursor.moveToFirst();
-        while (!cursor.isAfterLast()) {
-            ActivityFragment fragment = cursorToActivityFragment(cursor);
-
-            // The above query only guarantees that the startTime is in the interval.
-            // Make sure that the end time is also in the interval.
-            if (fragment.getFragmentEnd().isAfter(end)) {
-                ActivityFragment insideInterval = fragment.splitAtTime(end).first;
-                fragments.add(insideInterval);
-            } else {
-                fragments.add(fragment);
-            }
-            cursor.moveToNext();
-        }
-
-        cursor.close();
-        Log.d(TAG, String.format("Loaded %s raw fragments between %s and %s", fragments.size(), start, end));
-
-        return fragments;
-    }
-
-    private ActivityFragment cursorToActivityFragment(Cursor cursor) {
-        String activityName = cursor.getString(CompletedActivityTable.COLUMN_INDEX_ACTIVITY_NAME);
-        long activityStartMs = cursor.getLong(CompletedActivityTable.COLUMN_INDEX_ACTIVITY_START);
-        long activityEndMs = cursor.getLong(CompletedActivityTable.COLUMN_INDEX_ACTIVITY_END);
-        long startMs = cursor.getLong(CompletedActivityTable.COLUMN_INDEX_START);
-        long endMs = cursor.getLong(CompletedActivityTable.COLUMN_INDEX_END);
-
-        return new ActivityFragment(activityName, new DateTime(activityStartMs), new DateTime(activityEndMs),
-                new DateTime(startMs), new DateTime(endMs));
     }
 
 }

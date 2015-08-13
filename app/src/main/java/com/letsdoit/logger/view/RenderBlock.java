@@ -8,6 +8,7 @@ import com.letsdoit.logger.data.dao.ActivityFragment;
 
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
+import org.joda.time.Period;
 
 import java.util.List;
 
@@ -45,6 +46,10 @@ public class RenderBlock {
 
     public List<ActivityFragment> getFragments() {
         return fragments == null ? EMPTY_FRAGMENTS : fragments;
+    }
+
+    public Duration getDuration() {
+        return new Duration(blockStart, blockEnd);
     }
 
     /**

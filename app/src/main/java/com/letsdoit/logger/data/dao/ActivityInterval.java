@@ -17,7 +17,6 @@ import java.util.List;
  * Created by Andrey on 7/14/2014.
  */
 public class ActivityInterval {
-    private static DateTimeFormatter format = DateTimeFormat.forPattern("mm:ss");
 
     private final DateTime start;
     private final DateTime end;
@@ -92,28 +91,5 @@ public class ActivityInterval {
         return new ActivityInterval(start, next.end, extendedFragments);
     }
 
-    public String stringify() {
-        DateTime blockTime = this.start;
 
-        Iterator<ActivityFragment> fragmentIter = fragments.iterator();
-        StringBuilder buffer = new StringBuilder();
-
-        while (blockTime.isBefore(this.end) && fragmentIter.hasNext()) {
-            ActivityFragment fragment = fragmentIter.next();
-
-            if (blockTime.isBefore(fragment.getFragmentStart())) {
-                buffer.append(format.print(blockTime)).append(" Free Time\n");
-            }
-
-            buffer.append(format.print(fragment.getFragmentStart()))
-                    .append(" ").append(fragment.getActivityName()).append("\n");
-            blockTime = fragment.getFragmentEnd();
-        }
-
-        if (blockTime.isBefore(end)) {
-            buffer.append(format.print(blockTime)).append(" Free Time\n");
-        }
-        buffer.append(format.print(end)).append(" end.");
-        return buffer.toString();
-    }
 }

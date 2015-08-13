@@ -47,9 +47,11 @@ public class IntervalRenderer {
                 String.format("The minBlockDuration cannot be larger than the interval.  " +
                         "Interval [%s], minBlockDuration [%s].", interval, minBlockDuration));
 
-        Preconditions.checkArgument(interval.getDuration().getMillis() % freeTimePartitionDuration.getMillis() != 0,
+        long remainder = interval.getDuration().getMillis() % freeTimePartitionDuration.getMillis();
+        Preconditions.checkArgument(remainder == 0,
                 String.format("The freeTimePartitionDuration needs to evenly divide the interval." +
-                        "Interval [%s], freeTimePartitionDuration [%s].", interval, freeTimePartitionDuration));
+                        "  Interval [%s], freeTimePartitionDuration [%s], remainder [%s]", interval,
+                        freeTimePartitionDuration, remainder));
 
         DateTime lastBlockCutoff = interval.getEnd().minus(minBlockDuration);
 

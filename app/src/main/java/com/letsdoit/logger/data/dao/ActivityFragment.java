@@ -11,6 +11,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.Period;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import java.util.Iterator;
 import java.util.List;
@@ -30,6 +32,7 @@ import java.util.List;
  */
 public class ActivityFragment {
     private static final String TAG = "ADP_ActivityFragment";
+    private static DateTimeFormatter format = DateTimeFormat.forPattern("mm:ss");
 
     private final String activityName;
 
@@ -67,6 +70,7 @@ public class ActivityFragment {
         this(activityName, activityStart, activityEnd, activityStart, activityEnd);
     }
 
+    @Deprecated
     public Pair<ActivityFragment, ActivityFragment> splitAtTime(DateTime splitTime) {
         Preconditions.checkArgument(splitTime.isAfter(fragmentStart), "The split time has to be after the fragment " +
                 "start time");
@@ -181,6 +185,7 @@ public class ActivityFragment {
         return fragments;
     }
 
+    @Deprecated
     public static List<ActivityFragment> defragment(List<ActivityFragment> splitFragments) {
         List<ActivityFragment> fragments = Lists.newArrayList();
 
@@ -295,5 +300,30 @@ public class ActivityFragment {
 
     public ActivityFragment clip(DateTime start, DateTime end) {
         return clipStart(start).clipEnd(end);
+    }
+
+    public static String stringify(List<ActivityFragment> fragments, DateTime start, DateTime end) {
+        DateTime blockTime = start;
+
+        Iterator<ActivityFragment> fragmentIter = fragments.iterator();
+        StringBuilder buffer = new StringBuilder();
+
+        while (blockTime.isBefore(end) && fragmentIter.hasNext()) {
+            ActivityFragment fragment = fragmentIter.next();
+
+            if (blockTime.isBefore(fragment.getFragmentStart())) {
+                buffer.append(format.print(blockTime)).append(" Free Time\n");
+            }
+
+            buffer.append(format.print(fragment.getFragmentStart()))
+                    .append(" ").append(fragment.getActivityName()).append("\n");
+            blockTime = fragment.getFragmentEnd();
+        }
+
+        if (blockTime.isBefore(end)) {
+            buffer.append(format.print(blockTime)).append(" Free Time\n");
+        }
+        buffer.append(format.print(end)).append(" end.");
+        return buffer.toString();
     }
 }

@@ -17,7 +17,6 @@ import android.widget.TextView;
 
 import com.letsdoit.logger.R;
 import com.letsdoit.logger.data.dao.Activity;
-import com.letsdoit.logger.data.dao.ActivityFragment;
 import com.letsdoit.logger.data.dao.ActivityInterval;
 import com.letsdoit.logger.data.dao.Partitioner;
 
@@ -34,8 +33,8 @@ public class HourAdapter extends ArrayAdapter<Hour> {
     private static final String TAG = "ADP_HourAdapter";
     public static final Duration ACTIVITY_INTERVAL_DURATION = Period.minutes(30).toStandardDuration();
     private static Duration HALF_HOUR = new Duration(30 * 60 * 1000);
-    private static Duration FIVE_MINUTES = new Duration(5 * 60 * 1000);
-    private static Duration FOUR_MINUTES = new Duration(4 * 60 * 1000);
+    private static Duration FREE_TIME_PARTITION_DURATION = new Duration(5 * 60 * 1000);
+    private static Duration MIN_BLOCK_DURATION = new Duration(4 * 60 * 1000);
 
     // The width of the hour label on the left side of the screen
     private static int HOUR_FIELD_WIDTH_IN_DIP = 24;
@@ -94,30 +93,25 @@ public class HourAdapter extends ArrayAdapter<Hour> {
             hourText.setTextColor(Color.BLACK);
         }
 
+        List<RenderBlock> firstHalfHourRenderBlocks = IntervalRenderer.render(firstHalfHour, MIN_BLOCK_DURATION, FREE_TIME_PARTITION_DURATION);
+        List<RenderBlock> secondHalfHourRenderBlocks = IntervalRenderer.render(secondHalfHour, MIN_BLOCK_DURATION,
+                FREE_TIME_PARTITION_DURATION);
+
         ActivityInterval firstHalfHourInterval = new ActivityInterval(firstHalfHour.getStart(), firstHalfHour.getEnd(),
                 firstHalfHour.getFragments());
         ActivityInterval secondHalfHourInterval = new ActivityInterval(secondHalfHour.getStart(),
                 secondHalfHour.getEnd(), secondHalfHour.getFragments());
 
-        List<ActivityInterval> firstHalfHourDisplayBlocks =
-                DisplayBlock.mergeTooSmall(
-                        DisplayBlock.wrapFragmentsAndClipFreeTime(firstHalfHourInterval, FIVE_MINUTES),
-                        FOUR_MINUTES);
-        List<ActivityInterval> secondHalfHourDisplayBlocks =
-                DisplayBlock.mergeTooSmall(
-                        DisplayBlock.wrapFragmentsAndClipFreeTime(secondHalfHourInterval, FIVE_MINUTES),
-                        FOUR_MINUTES);
-
         LinearLayout firstHalfHourLayout = (LinearLayout) view.findViewById(R.id.firstHalfHourLayout);
         LinearLayout secondHalfHourLayout = (LinearLayout) view.findViewById(R.id.secondHalfHourLayout);
 
-        sizeChildrenInHalfHour(firstHalfHourDisplayBlocks, firstHalfHourLayout, false);
-        sizeChildrenInHalfHour(secondHalfHourDisplayBlocks, secondHalfHourLayout, true);
+        sizeChildrenInHalfHour(firstHalfHourRenderBlocks, firstHalfHourLayout, false);
+        sizeChildrenInHalfHour(secondHalfHourRenderBlocks, secondHalfHourLayout, true);
 
         return view;
     }
 
-    private void sizeChildrenInHalfHour(List<ActivityInterval> halfHour, LinearLayout halfHourLayout,
+    private void sizeChildrenInHalfHour(List<RenderBlock> halfHour, LinearLayout halfHourLayout,
                                         boolean isSecondHalf) {
         // Make sure there are enough GUI blocks to display all of the DisplayBlocks
         int numButtons = halfHourLayout.getChildCount();
@@ -136,8 +130,8 @@ public class HourAdapter extends ArrayAdapter<Hour> {
 
         // Resize and update the text on the GUI blocks
         for(int i = 0; i < numDisplayBlocks; i++) {
-            ActivityInterval block = halfHour.get(i);
-            double relativeSize = block.getPercentageTimeOfPeriod(HALF_HOUR);
+            RenderBlock block = halfHour.get(i);
+            double relativeSize = (double) block.getDuration().getMillis() / (double) HALF_HOUR.getMillis();
 
             Button button = (Button) halfHourLayout.getChildAt(i);
             int buttonWidth = (int) (relativeSize * pixelsInHalfHour * 0.9);
@@ -145,7 +139,7 @@ public class HourAdapter extends ArrayAdapter<Hour> {
             
             button.setTag(R.id.display_block_key, block);
 
-            if (block.getEnd().isAfter(now)) {
+            if (block.getBlockEnd().isAfter(now)) {
                 button.setAlpha((float) 0.25);
             } else if (isSecondHalf) {
                 button.setAlpha((float) 0.50);
@@ -153,13 +147,13 @@ public class HourAdapter extends ArrayAdapter<Hour> {
                 button.setAlpha(1);
             }
 
-            if (block.isEmpty()) {
+            if (block.getFragments().isEmpty()) {
                 button.setText("");
             } else {
                 if (relativeSize < 0.1) {
                     button.setText("");
                 } else {
-                    String activityName = block.getActivityFragment(0).getActivityName();
+                    String activityName = block.getFragments().get(0).getActivityName();
                     button.setText(activityName);
                 }
             }

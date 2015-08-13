@@ -21,6 +21,7 @@ import com.letsdoit.logger.data.dao.ActivityInterval;
 import com.letsdoit.logger.data.sqlite.CompletedActivityFragmentsDAO;
 import com.letsdoit.logger.loader.CompletedActivityFragmentLoader;
 import com.letsdoit.logger.view.HourAdapter;
+import com.letsdoit.logger.view.RenderBlock;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -59,7 +60,7 @@ public class Main extends android.app.Activity
     private HourAdapter adapter;
 
     private View cachedStartBlock = null;
-    private ActivityInterval cachedStartInterval = null;
+    private RenderBlock cachedStartInterval = null;
     private boolean isMaxWindowSize = false;
 
     @Override
@@ -156,39 +157,42 @@ public class Main extends android.app.Activity
     }
 
     public void onTimeEntryButtonClick(View view) {
-        ActivityInterval block = (ActivityInterval) view.getTag(R.id.display_block_key);
+        RenderBlock block = (RenderBlock) view.getTag(R.id.display_block_key);
 
         // Don't allow selections in the future
-        if (block.getEnd().isAfter(DateTime.now())) {
+        if (block.getBlockEnd().isAfter(DateTime.now())) {
             return;
         }
 
         if (cachedStartInterval == null) {
             // Save the clicked empty block as the start of the selection
-            if (block.isEmpty()) {
+            if (block.getFragments().isEmpty()) {
                 cachedStartBlock = view;
                 cachedStartInterval = block;
                 view.setAlpha((float) 0.25);
             } else {
-                new AlertDialog.Builder(this).setMessage(block.stringify()).create().show();
+                String message = ActivityFragment.stringify(block.getFragments(), block.getBlockStart(), block.getBlockEnd());
+                new AlertDialog.Builder(this).setMessage(message).create().show();
             }
         } else {
             dao.open();
-            List<Activity> activitiesInInterval = dao.getActivitiesInRange(cachedStartInterval.getStart(), block.getEnd());
+            List<Activity> activitiesInInterval = dao.getActivitiesInRange(
+                    cachedStartInterval.getBlockStart(),
+                    block.getBlockEnd());
             dao.close();
             Log.d(TAG, String.format("Num activities in selection: %s", activitiesInInterval.size()));
 
             // Don't create activity if it overlaps with another activity
             if (activitiesInInterval.isEmpty()) {
                 // Clear the start selection
-                ActivityInterval startBlock = cachedStartInterval;
+                RenderBlock startBlock = cachedStartInterval;
                 cachedStartBlock.setAlpha(1);
                 cachedStartInterval = null;
                 cachedStartBlock = null;
 
-                if (block.isEmpty()) {
+                if (block.getFragments().isEmpty()) {
                     // Make sure that the selected block is after
-                    if (block.getEnd().isAfter(startBlock.getStart())) {
+                    if (block.getBlockEnd().isAfter(startBlock.getBlockStart())) {
                         Intent intent = new Intent(this, EnterActivity.class);
 
                         intent.putExtra(START_BLOCK, GSON.toJson(startBlock));
@@ -196,7 +200,8 @@ public class Main extends android.app.Activity
                         startActivity(intent);
                     }
                 } else {
-                    new AlertDialog.Builder(this).setMessage(block.stringify()).create().show();
+                    String message = ActivityFragment.stringify(block.getFragments(), block.getBlockStart(), block.getBlockEnd());
+                    new AlertDialog.Builder(this).setMessage(message).create().show();
                 }
             }
         }
